@@ -32,8 +32,8 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_PRIVATE_KEY }}
           port: 22
-          source: "doc_build/*"
-          target: "~/docker/documentation/public"
+          source: 'doc_build/*'
+          target: '~/docker/documentation/public'
           debug: true
 
       - name: Deploy to VPS using Docker Compose
