@@ -11,11 +11,14 @@
     "preview": "rspress preview"
   },
   "dependencies": {
-    "rspress": "^1.40.2"
+    "rspress": "^1.40.2",
+    "rspress-plugin-back-to-top": "^0.3.0",
+    "rspress-plugin-mermaid": "^0.3.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@eslint/js": "^9.19.0",
+    "@rspress/plugin-shiki": "^1.45.1",
     "@types/node": "^18.11.17",
     "eslint": "^9.19.0",
     "globals": "^15.14.0",

@@ -1,4 +1,6 @@
 import * as path from 'node:path';
+import { pluginShiki } from '@rspress/plugin-shiki';
+import mermaid from 'rspress-plugin-mermaid';
 import { defineConfig } from 'rspress/config';
 
 export default defineConfig({
@@ -9,6 +11,14 @@ export default defineConfig({
     light: '/rspress-light-logo.png',
     dark: '/rspress-dark-logo.png',
   },
+  plugins: [
+    mermaid({
+      mermaidConfig: {
+        theme: 'base',
+      },
+    }),
+    pluginShiki(),
+  ],
   themeConfig: {
     socialLinks: [
       {
@@ -17,5 +27,8 @@ export default defineConfig({
         content: 'https://github.com/ln-history',
       },
     ],
+  },
+  markdown: {
+    showLineNumbers: true,
   },
 });
