@@ -44,6 +44,6 @@ jobs:
           key: ${{ secrets.VPS_PRIVATE_KEY }}
           port: 22
           script: |
-            cd ~/docker/ln-history-documentation
+            cd ~/docker/documentation
             docker compose down --volumes
             docker compose up -d
