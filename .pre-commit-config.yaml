@@ -1,0 +1,21 @@
+repos:
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.8.3
+    hooks:
+      - id: commitizen
+      - id: commitizen-branch
+        stages: [pre-push]
+
+  - repo: local
+    hooks:
+      - id: bun-format-lint-check
+        name: Run bun format, lint, and check
+        entry: bash
+        language: system
+        pass_filenames: false
+        files: \.(js|ts|jsx|tsx|json|md)$
+        args:
+          - -c
+          - |
+            bun run format && \
+            bun run check

@@ -1,0 +1,49 @@
+name: Deploy Rspress Site to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "$HOME/.bun/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies and build Rspress site
+        run: |
+          bun install
+          bun run build
+
+      - name: Upload Built Site to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_PRIVATE_KEY }}
+          port: 22
+          source: "doc_build/*"
+          target: "~/docker/documentation/public"
+          debug: true
+
+      - name: Deploy to VPS using Docker Compose
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd ~/docker/ln-history-documentation
+            docker-compose down --volumes
+            docker-compose up -d
