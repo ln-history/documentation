@@ -1,9 +1,8 @@
 # ln-history-documentation
 
 ## Summary
+
 This project documents the ln-history platform. It guides through each step to setup ones own infrastructure.
-
-
 
 ## Development
 

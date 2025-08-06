@@ -17,20 +17,20 @@ hero:
     alt: Logo
 features:
   - title: Perisist gossip messages
-    details: Keep your collected gossip messages in a Postgres database 
+    details: Keep your collected gossip messages in a Postgres database
     icon: 🏺
   - title: Query gossip messages
     details: Utilize optimized database configurations and queries
     icon: 📊
   - title: Research gossip messages
-    details: Analyze the Lightning Network gossip 
+    details: Analyze the Lightning Network gossip
     icon: 🔬
   - title: Make gossip messages and results accessible
-    details: Use the API to give access to your results 
+    details: Use the API to give access to your results
     icon: 🌈
   - title: Fully open source
     details: The ln-history project is completely open source. Feel free to contribute
-    icon:  🌍
+    icon: 🌍
   - title: Summer of Bitcoin
     details: This project is the result of Summer of Bitcoin 2025
     icon: 🤝
