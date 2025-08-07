@@ -32,7 +32,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_PRIVATE_KEY }}
           port: 22
-          source: 'doc_build/*'
+          source: 'doc_build'
           target: '~/docker/documentation/public'
           strip_components: 1
           debug: true
