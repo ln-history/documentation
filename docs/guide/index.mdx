@@ -1,4 +1,6 @@
-import { Badge } from '@theme';
+import { Badge } from '@rspress/theme-default';
+import Terminal from '/src/components/Terminal';
+import TerminalOneLiner from '/src/components/TerminalOneLiner.tsx'
 
 # 👋 Introduction
 
@@ -88,11 +90,50 @@ I will start working on a solution to this in the near future, likely utilizing 
 
 ## Prerequisits
 
-The infrastructure relies on [docker](https://docker.com) (and [docker compose](https://docs.docker.com/compose/)) trying to make it as platform independent as possible. _Nonetheless, I highly recommend running it on a Linux machine, as that’s the only environment I’ve tested it on._
+The infrastructure relies on [docker](https://docker.com) (and [docker compose](https://docs.docker.com/compose/)) trying to make it as platform independent as possible. _Nonetheless, I highly recommend running it on a Linux machine (specifically [Ubuntu](https://ubuntu.com/)), as that’s the only environment I’ve tested it on._
 
 ### Docker installation
 
-As a first step you need to install
+We will follow the [official documentation](https://docs.docker.com/engine/install/ubuntu/).
+
+1. Setup up Docker's `apt` repository
+<div className="terminal">
+    <div className="terminal-content">
+        {String.raw`# Add Docker's official GPG key:`}
+        <TerminalOneLiner command="sudo apt-get update" inTerminal={true} />
+        <TerminalOneLiner command="sudo apt-get install ca-certificates curl" inTerminal={true} />
+        <TerminalOneLiner command="sudo install -m 0755 -d /etc/apt/keyrings" inTerminal={true} />
+        <TerminalOneLiner command="sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc" inTerminal={true} />
+        <TerminalOneLiner command="sudo chmod a+r /etc/apt/keyrings/docker.asc" inTerminal={true} />
+
+        {String.raw`# Add the repository to Apt sources:`}
+        <TerminalOneLiner command={String.raw`echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \$(. /etc/os-release && echo "\${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \sudo tee /etc/apt/sources.list.d/docker.list > /dev/null sudo apt-get update`} inTerminal={true} />
+    </div>
+</div>
+
+
+2. Install the (latest) Docker packages
+<TerminalOneLiner command="sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin" inTerminal={false} />
+
+
+3. Verify that the installation is successful by running the hello-world image and check if you should see this result:
+
+<Terminal command="sudo docker run hello-world">
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+
+To generate this message, Docker took the following steps:
+ 1. The Docker client contacted the Docker daemon.
+ 2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
+    (amd64)
+ 3. The Docker daemon created a new container from that image which runs the
+    executable that produces the output you are currently reading.
+ 4. The Docker daemon streamed that output to the Docker client, which sent it
+    to your terminal.
+
+To try something more ambitious, you can run an Ubuntu container with:
+ $ docker run -it ubuntu bash
+</Terminal>
 
 ## Ready - Set - Go
 

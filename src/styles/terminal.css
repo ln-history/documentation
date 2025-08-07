@@ -1,0 +1,159 @@
+/* Terminal Component Styles */
+.terminal {
+  background-color: #111827;
+  border-radius: 8px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(55, 65, 81, 0.5);
+  overflow: hidden;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 14px;
+  border: 1px solid #374151;
+}
+
+.terminal-header {
+  background-color: #1f2937;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #374151;
+}
+
+.terminal-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.terminal-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.terminal-dot--red {
+  background-color: #ef4444;
+}
+
+.terminal-dot--yellow {
+  background-color: #eab308;
+}
+
+.terminal-dot--green {
+  background-color: #22c55e;
+}
+
+.terminal-title {
+  flex: 1;
+  text-align: center;
+}
+
+.terminal-title-text {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.terminal-content {
+  padding: 16px;
+  background-color: #111827;
+}
+
+.terminal-output {
+  color: #d1d5db;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+/* Command Line Styles (shared between both components) */
+.command-line {
+  background-color: #111827;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 14px;
+  border: 1px solid #374151;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.command-line--in-terminal {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin-bottom: 0;
+}
+
+.command-prompt {
+  color: #4ade80;
+  font-weight: 600;
+}
+
+.command-text {
+  color: #ffffff;
+  flex: 1;
+}
+
+.terminal-cursor {
+  width: 8px;
+  height: 16px;
+  background-color: #ffffff;
+  margin-left: 4px;
+  animation: blink 1s infinite;
+}
+
+/* Copy Button Styles */
+.copy-button {
+  background: rgba(55, 65, 81, 0.6);
+  border: 1px solid rgba(75, 85, 99, 0.5);
+  border-radius: 6px;
+  color: #9ca3af;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  backdrop-filter: blur(4px);
+}
+
+.copy-button:hover {
+  background: rgba(75, 85, 99, 0.8);
+  color: #e5e7eb;
+  border-color: rgba(156, 163, 175, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.copy-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.copy-button--copied {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.copy-button--copied:hover {
+  background: rgba(34, 197, 94, 0.3);
+  color: #16a34a;
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.copy-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
