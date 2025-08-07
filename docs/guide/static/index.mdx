@@ -1,0 +1,310 @@
+import { Badge } from '@rspress/theme-default';
+import Terminal from '/src/components/Terminal';
+import TerminalOneLiner from '/src/components/TerminalOneLiner';
+
+# Static Data Insertion <Badge text="easy" type="info" />
+
+This section sets up the docker container `insert-gossip` which is able to read gossip messages in bytes format from a specified file.
+Such a file is e. g. the `gossip_store` file that gets created by a [Core Lightning node](https://corelightning.org/) automatically.
+
+In case you want to get a deeper understanding about this file, feel free to check out the [official documentation](https://docs.corelightning.org/docs/contribute-to-core-lightning#gossip_store-direct-access-to-lightning-gossip) as well as the source code of the [insert-gossip](https://github.com/ln-history/insert-gossip) service.
+
+## Setup
+
+We will start by setting up the directory structure and continue with the docker container
+
+### Create directory
+
+From the project root we create the `insert-gossip` directory with the following command.
+
+<TerminalOneLiner
+  path="~/ln-history"
+  command="mkdir insert-gossip && cd insert-gossip"
+/>
+
+### Environment variables <Badge text="authentication" type="danger"/>
+
+Create an `.env` file and fill in the **url of your blockchain rpc explorer** as well as the file_path to the file with the raw gossip.
+The easiest way would be to just copy your `gossip_store` file in this directory.
+
+```bash
+FILE_PATH=gossip_store                                                  # Or any other file path
+BLOCKCHAIN_RPC_URL=YOUR_BLOCKCHAIN_RPC_URL                              # See the introduction for details
+LN_HISTORY_DATABASE_CONNECTION_STRING=YOUR_DATABASE_CONNECTION_STRING   # The connection string to your ln-history-database
+```
+
+🔐 **Important**: Never commit `.env` files containing credentials to version control.
+
+### 🐳 Docker container
+
+Create the `docker-compose.yml` and paste the following content into it.
+
+```yml
+services:
+  insert-gossip:
+    image: ghcr.io/ln-history/ln-history:latest
+    container_name: insert-gossip
+    restart: never ?
+    environment:
+      FILE_PATH: $FILE_PATH
+      BLOCKCHAIN_RPC_URL: $BLOCKCHAIN_RPC_URL
+    env_file: .env
+    volumes: file_path?
+```
+
+### Folder structure
+
+Ultimatly the folder structure should look like this:
+
+```bash
+database/
+├── docker-compose.yml      # Docker setup for this service
+└── gossip_store            # The file that contains the gossip messages in raw bytes
+```
+
+Please make sure that the permissions are correctly set, such that the insert-gossip service has the correct permission to read the file at `FILE_PATH`. <Badge text="info" type="tip" />
+
+## Notice <Badge text="warning" type="warning" />
+
+Please note that the current implementation `channel_announcement` makes a http request to your Bitcoin RPC explorer.
+The time it takes to finish the insertion depends heavily on your bandwidth as well as the performance of your Bitcoin RPC explorer.
+
+## Run
+
+We start the container by using `docker compose up -d` (The flag `-d` abbreviates `deamon`, meaning background process).
+
+<TerminalOneLiner path="~/ln-history/database" command="docker compose up -d" />
+
+This will start the `insert-gossip` to go through your inserted file.
+
+### Monitoring
+
+You can monitor the progess of the insertion by executing the following command.
+
+<TerminalOneLiner
+  path="~/ln-history/insert-gossip"
+  command="docker compose logs -f --tail=100"
+/>
+
+You can always access the logs by pressing `CTRL + C`.
+
+### Phase 1
+
+The `insert-gossip` service will first iterate through the whole file and log statistics about the parsable gossip messages found.
+During that run it is sorting the gossip messages into three seperate files `node_announcements.bin`, `channel_announcements.bin`, `channel_updates.bin`.
+You can see the statistics in the logs:
+
+<Terminal command="docker compose logs -f --tail=100" path="~/ln-history/insert-gossip">
+    ```
+    The `insert-gossip` service started. Press CTRL+C or `docker compose down` to stop it.
+
+    Starting phase 1
+
+
+    Iterating through the file: `gossip_store`.
+    File has a size of `234123` bytes
+
+    Creating node_announcements.bin
+    ...
+    Creating channel_announcements.bin
+    ...
+    Creating channel_updates.bin
+    ...
+
+    Splitting the file `gossip_store` into the following three files:
+        - node_announcements.bin
+        - channel_announcements.bin
+        - channel_updates.bin
+
+    Finished iterating through `gossip_store` file
+
+    Distribution of messages:
+        - node_announcements: 2314
+        - channel_announcement: 1832
+        - channel_updates: 43187
+        - unable to parse: 0
+
+
+    Sucessfully finished phase 1
+    ```
+
+</Terminal>
+
+### Phase 2
+
+The `insert-gossip` service will setup a [DuckDB](https://duckdb.org) - an in-memory database - that temporarly stores the gossip messages in the file `temp-db.duckdb`.
+The DuckDB has the same schema as the _ln-history-database_.
+
+After that it will go through the phases `2a` -> `2b` -> `2c`.
+
+<Terminal command="docker compose logs -f --tail=100" path="~/ln-history/insert-gossip">
+    ```
+    Starting phase 2
+
+    Creating DuckDB database `temp-db.duckdb`
+    Sucessfully created DuckDB database `temp-db.duckdb`
+    ```
+
+</Terminal>
+
+#### Phase 2a: node_anouncements
+
+The service interates through the `nodes_announcements.bin`. For every `node_announcement` it checks if the `node_id` has been seen before. If not it inserts the `node_id` into the nodes table of the DuckDB. In any case it adds the gossip message into the `nodes_raw_gossip` table.
+
+<Terminal command="docker compose logs -f --tail=100" path="~/ln-history/insert-gossip">
+    ```
+    Starting phase 2a
+
+    Iterating through `nodes_announcements.bin` file
+    File has a size of `234123` bytes
+
+    Adding data to DuckDB database `temp-db.duckdb`
+
+    Results of node_announcement insertion:
+        - nodes added:  851
+        - nodes_raw_gossip added: 2314
+        - duplicates found: 0
+        - errors during parsing: 0
+
+    Sucessfully finished phase 2a
+    ```
+
+</Terminal>
+
+#### Phase 2b: channel_announcements
+
+The service interates through the `channel_announcements.bin`. For every `channel_announcement` it needs to request the `BLOCKCHAIN_RPC` service to get the `amount_sat` and `timestamp` (timestamp of the Bitcoin block when it was mined) of that channel.
+It also checks if the `node_id`s of the participating nodes namely `node_id_1` and `node_id_2` exist in the `nodes` table. In case they don't, the missing `node_id` gets inserted with the `from_timestamp` (and `last_seen`) being initially the `timestamp` of the block.
+For every `channel_announcement` a new row gets created in the `channels` table.
+
+<Terminal command="docker compose logs -f --tail=100" path="~/ln-history/insert-gossip">
+    ```
+    Starting phase 2b
+
+    Iterating through `channel_announcements.bin` file
+    File has a size of `3212351` bytes
+
+    Adding data to DuckDB database `temp-db.duckdb`
+
+    Results of channel_announcement insertion:
+        - complete channels added:  851
+        - incomplete (missing node_id) channels added: 23
+        - duplicates found: 0
+        - errors during parsing: 0
+        - errors during requesting BLOCKCHAIN_RPC service: 0
+
+    Sucessfully finished phase 2b
+    ```
+
+</Terminal>
+
+#### Phase 2c: channel_updates
+
+The service iterates through the `channel_updates.bin`. For every `channel_update` it checks if the channel has been announced before. If not it creates a new entry in the `channels` table.
+Every `channel_update` gets inserted into the `channel_updates` table.
+
+<Terminal command="docker compose logs -f --tail=100" path="~/ln-history/insert-gossip">
+    ```
+    Starting phase 2c
+
+    Iterating through `channel_updates.bin` file
+    File has a size of `832713` bytes
+
+    Adding data to DuckDB database `temp-db.duckdb`
+
+    Results of channel_update insertion:
+        - channel_updates (of existing channels) added:  41231
+        - channel_updates (of not existing channels) added: 326
+        - duplicates found: 0
+        - errors during parsing: 0
+
+    Sucessfully finished phase 2c
+
+
+    Sucessfully finished phase 2
+    ```
+
+</Terminal>
+
+### Phase 3
+
+After the duckdb tables in the `temp-db.duckdb` have been filled completly, the `insert-gossip` services exports each table as a parquet file (?).
+As the last step of the insertion, the service imports the created parquet (?) files into the postgresql database.
+
+<Terminal command="docker compose logs -f --tail=100" path="~/ln-history/insert-gossip">
+    ```
+    Starting phase 3
+
+    Exporting tables to parqut files
+        - nodes table: nodes.parquet
+        - nodes_raw_gossip: nodes_raw_gossip.parquet
+        - channel_announcements: channel_announcements.parquet
+        - channel_updates: channel_updates.parquet
+
+    Finished exporting nodes table to nodes.parquet
+    ...
+    Finished exporting nodes_raw_gossip table to nodes_raw_gossip.parquet
+    ...
+    Finished exporting channel_announcements table to channel_announcements.parquet
+    ...
+    Finished exporting channel_updates table to channel_updates.parquet
+
+
+    Sucessfully finished phase 3
+    ```
+
+</Terminal>
+
+### Phase 4
+
+<Terminal command="docker compose logs -f --tail=100" path="~/ln-history/insert-gossip">
+    ```
+    Starting phase 4
+
+    Import parquet files into postgresql _ln-history-database_
+        - nodes table: nodes.parquet
+        - nodes_raw_gossip: nodes_raw_gossip.parquet
+        - channel_announcements: channel_announcements.parquet
+        - channel_updates: channel_updates.parquet
+
+    Finished importing nodes.parquet into nodes table
+    ...
+    Finished importing nodes_raw_gossip.parquet into nodes_raw_gossip table
+    ...
+    Finished importing channel_announcements.parquet into channel_announcements table
+    ...
+    Finished importing channel_updates.parquet into channel_updates table
+
+
+    Sucessfully finished phase 4
+    ```
+
+</Terminal>
+
+### Finish
+
+The `insert-gossip` service is concepted to run once over a given file and does not perisist information about which files have already been read.
+To help the user keep track of the files it appends a `.done` to the file that was imported into _ln-history-database_.
+
+It has finished when you see this in your logs:
+
+<Terminal command="docker compose logs -f --tail=100" path="~/ln-history/insert-gossip">
+    ```
+    Renaming the initial file `gossip_store` to `gossip_store.done` to indicate that the data has been inserted.
+
+    Removing parquet temp files:
+        - nodes.parquet
+        - nodes_raw_gossip.parquet
+        - channel_announcements.parquet
+        - channel_updates.parquet
+
+    Removing temp-db.duckdb
+
+    Sucessfully cleaned up resources.
+    ```
+
+</Terminal>
+
+## More information
+
+Feel free to read the detailed [README.md](https://github.com/ln-history/insert-gossip) file in the repository.

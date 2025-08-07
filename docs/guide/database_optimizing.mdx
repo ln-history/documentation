@@ -1,0 +1,60 @@
+import { Badge } from '@rspress/theme-default';
+import DockerTerminalOneLiner from '/src/components/DockerTerminalOneLiner';
+
+# Database Optimizing
+
+At this step all gossip messages have been inserted into the _ln-history-database_.
+
+We will tune the [Postgresql](https://www.postgresql.org/) database such the queries run more efficiently.
+
+## Optional Step <Badge text="info" type="tip" />
+
+Depending on your use case you might find this optimization not helpful.
+
+The [ln-history](https://github.com/ln-history) project has a modular design. You can optimize your database the way you want to.
+Please note that skipping this sections and continuing with the backend is not useful, since the backend queries the database and needs this optimization.
+
+## Indexing
+
+We will index the gossip messages such that queries on the tables run more quickly
+
+### nodes
+
+<DockerTerminalOneLiner command="CREATE INDEX idx_nodes_full_time_range ON public.nodes USING btree (from_timestamp DESC, last_seen DESC)" />
+<DockerTerminalOneLiner command="CREATE INDEX nodes_node_id_str ON public.nodes USING btree (node_id_str)" />
+
+### nodes_raw_gossip
+
+<DockerTerminalOneLiner command="CREATE UNIQUE INDEX nodes_raw_gossip_pkey ON public.nodes_raw_gossip USING btree (gossip_id)" />
+<DockerTerminalOneLiner command="CREATE INDEX nodes_raw_gossip_node_id_str ON public.nodes_raw_gossip USING btree (node_id_str)" />
+<DockerTerminalOneLiner command="CREATE INDEX idx_nodes_raw_gossip_node_ts ON public.nodes_raw_gossip USING btree (node_id_str, timestamp)" />
+
+### channel_announcements
+
+<DockerTerminalOneLiner command="CREATE UNIQUE INDEX channels_pkey ON public.channels USING btree (scid)" />
+<DockerTerminalOneLiner command="CREATE INDEX idx_channels_full_time_range ON public.channels USING btree (from_timestamp DESC, to_timestamp DESC)" />
+<DockerTerminalOneLiner command="CREATE INDEX channels_source_node_id_str ON public.channels USING btree (source_node_id_str)" />
+<DockerTerminalOneLiner command="CREATE INDEX channels_target_node_id_str ON public.channels USING btree (target_node_id_str)" />
+
+### channel_updates
+
+<DockerTerminalOneLiner
+  command="
+indexdef
+CREATE UNIQUE INDEX channel_updates_scid_direction_valid_from ON public.channel_updates USING btree (scid, direction, from_timestamp)"
+/>
+<DockerTerminalOneLiner command="CREATE UNIQUE INDEX channel_updates_gossip_id ON public.channel_updates USING btree (gossip_id)" />
+<DockerTerminalOneLiner command="CREATE INDEX channel_updates_valid_from_valid_to ON public.channel_updates USING btree (from_timestamp DESC, to_timestamp DESC)" />
+<DockerTerminalOneLiner command="" />
+
+## Clustering
+
+## Testing
+
+### Correlation
+
+### Explain, Analyze, Buffers
+
+## More information
+
+Feel free to read my self written [blog article](https://ln-history.info/logbook/08-04-optimizing-database/) that explains it in detail.

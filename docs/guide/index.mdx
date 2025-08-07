@@ -1,6 +1,6 @@
 import { Badge } from '@rspress/theme-default';
 import Terminal from '/src/components/Terminal';
-import TerminalOneLiner from '/src/components/TerminalOneLiner.tsx'
+import TerminalOneLiner from '/src/components/TerminalOneLiner.tsx';
 
 # 👋 Introduction
 
@@ -54,7 +54,7 @@ graph TD
 ```
 
 The core of the plaform is a [postgres](https://www.postgresql.org/) database called _ln-history-database_ which gets setup first.
-After that you can decide if you want to setup the static or the live (_or even both_) modes.
+After that you can decide if you want to setup the **static** or the **live** (_or even both_) modes.
 
 _The simpler mode is the **static**, which I recommend for starters_
 
@@ -77,7 +77,16 @@ The [lnhistoryclient](https://pypi.org/project/lnhistoryclient/) provides classe
 Here you can see an visualization of the architecture
 ![architecture](https://ln-history.info/architecture.svg)
 
-## <Badge text="warning" type="warning" /> Important notice
+## I do not have any gossip messages
+
+You can still use this tool and do it yourself.
+[Dr. Christian Decker](https://scholar.google.ch/citations?user=ZaeGlZIAAAAJ&hl=de) collected and uploaded gossip messages ranging between `01-2018` to `09-2023`.
+See this[repository](https://github.com/lnresearch/topology/tree/main), which provides links to his gossip messages.
+You can download this data for free.
+
+With [ln-history](ln-history.info) I provide the infrastructure to analyze the gossip messages. Maybe this is all you are looking for?
+
+## Important notice <Badge text="warning" type="warning" />
 
 The Lightning Network - as a second layer technology - uses the Bitcoin blockchain. It is therefore necessary to have access to the Bitcoin blockchain.
 
@@ -94,27 +103,13 @@ The infrastructure relies on [docker](https://docker.com) (and [docker compose](
 
 ### Docker installation
 
-We will follow the [official documentation](https://docs.docker.com/engine/install/ubuntu/).
+We follow the [official documentation](https://docs.docker.com/engine/install/ubuntu/).
 
 1. Setup up Docker's `apt` repository
-<div className="terminal">
-    <div className="terminal-content">
-        {String.raw`# Add Docker's official GPG key:`}
-        <TerminalOneLiner command="sudo apt-get update" inTerminal={true} />
-        <TerminalOneLiner command="sudo apt-get install ca-certificates curl" inTerminal={true} />
-        <TerminalOneLiner command="sudo install -m 0755 -d /etc/apt/keyrings" inTerminal={true} />
-        <TerminalOneLiner command="sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc" inTerminal={true} />
-        <TerminalOneLiner command="sudo chmod a+r /etc/apt/keyrings/docker.asc" inTerminal={true} />
-
-        {String.raw`# Add the repository to Apt sources:`}
-        <TerminalOneLiner command={String.raw`echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \$(. /etc/os-release && echo "\${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \sudo tee /etc/apt/sources.list.d/docker.list > /dev/null sudo apt-get update`} inTerminal={true} />
-    </div>
-</div>
-
 
 2. Install the (latest) Docker packages
-<TerminalOneLiner command="sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin" inTerminal={false} />
 
+   <TerminalOneLiner command="sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin" />
 
 3. Verify that the installation is successful by running the hello-world image and check if you should see this result:
 
@@ -123,17 +118,63 @@ Hello from Docker!
 This message shows that your installation appears to be working correctly.
 
 To generate this message, Docker took the following steps:
- 1. The Docker client contacted the Docker daemon.
- 2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
+
+1.  The Docker client contacted the Docker daemon.
+2.  The Docker daemon pulled the "hello-world" image from the Docker Hub.
     (amd64)
- 3. The Docker daemon created a new container from that image which runs the
+3.  The Docker daemon created a new container from that image which runs the
     executable that produces the output you are currently reading.
- 4. The Docker daemon streamed that output to the Docker client, which sent it
+4.  The Docker daemon streamed that output to the Docker client, which sent it
     to your terminal.
 
 To try something more ambitious, you can run an Ubuntu container with:
- $ docker run -it ubuntu bash
+$ docker run -it ubuntu bash
+
 </Terminal>
+
+### Docker compose installation
+
+We follow the [official documentation](https://docs.docker.com/compose/install/standalone/)
+
+1. We download and install the Docker Compose standalone
+
+   <TerminalOneLiner command="curl -SL https://github.com/docker/compose/releases/download/v2.39.1/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose" />
+
+2. We apply executable permissions to the standalone binary in the target path for the installation
+   <TerminalOneLiner command="chmod +x /usr/local/bin/docker-compose" />
+
+## Folder structure
+
+On your machine navigate to your desired location where the project will live. You might want to create a specific user for that.
+
+### Create user <Badge text="optional" type="tip" />
+
+<TerminalOneLiner command="sudo adduser ln-history" />
+
+You can then add this user to the `sudo` group if needed:
+
+<TerminalOneLiner command="sudo usermod -aG sudo ln-history" />
+
+Switch to the new user:
+
+<TerminalOneLiner command="su - ln-history" />
+
+### Folder creation
+
+Each service in this project lives in its own isolated folder. This keeps configuration files, environment variables, and Docker setup neatly organized and modular.
+
+The structure looks like this:
+
+```
+<service-name>/
+├── .env                    # Environment variables for the service
+├── docker-compose.yml      # Docker setup for this service
+└── service-name.conf       # Optional configuration file
+```
+
+We will now create the project root folder **ln-history** where all the services will be created in.
+
+<TerminalOneLiner command="mkdir ln-history && cd ln-history" />
 
 ## Ready - Set - Go
 

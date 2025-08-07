@@ -1,0 +1,182 @@
+import { Badge } from '@rspress/theme-default';
+import TerminalOneLiner from '/src/components/TerminalOneLiner';
+import DockerTerminal from '/src/components/DockerTerminal';
+import DockerTerminalOneLiner from '/src/components/DockerTerminalOneLiner';
+
+# Database - Creation
+
+The database _ln-history-database_ is a [Postgres](https://postgresql.org) database.
+
+This is the first part where we will setup the database with authentication and all its tables.
+
+## Schema
+
+The gossip messages will be stored in the four tables `nodes`, `nodes_raw_gossip`, `channels`, `channel_updates`.
+The diagram below shows how their relationship.
+
+```mermaid
+erDiagram
+    nodes ||--o{ nodes_raw_gossip : has
+    nodes ||--o{ channels : "source_node_id"
+    nodes ||--o{ channels : "target_node_id"
+    channels ||--o{ channel_updates : has
+
+    nodes {
+        char(66) node_id PK
+        tztimestamp from_timestamp
+        tztimestamp last_seen
+    }
+
+    nodes_raw_gossip {
+        varchar(64) gossip_id PK
+        char(66) node_id FK
+        tztimestamp timestamp
+        bytea raw_gossip
+    }
+
+    channels {
+        varchar(23) scid PK
+        char(66) source_node_id FK
+        char(66) target_node_id FK
+        tztimestamp from_timestamp
+        tztimestamp to_timestamp
+        int amount_sat
+        bytea raw_gossip
+    }
+
+    channel_updates {
+        varchar(64) gossip_id PK
+        varchar(23) scid FK
+        bit direction
+        tztimestamp from_timestamp
+        tztimestamp to_timestamp
+        bytea raw_gossip
+    }
+```
+
+## Setup
+
+The _ln-history-database_ is running in a docker container via `docker compose`. We persist the actual PostgreSQL data by mounting a local directory called postgres-data into the container.
+
+### Create directory
+
+Create the new folder called **database**.
+
+<TerminalOneLiner path="~/ln-history" command="mkdir database && cd database" />
+
+### Create data directory
+
+This is where PostgreSQL will store its data. You do not need to add anything manually — it will be populated by the container.
+
+<TerminalOneLiner path="~/ln-history/database" command="mkdir postgres-data" />
+
+### Environment variables <Badge text="authentication" type="danger"/>
+
+Create an `.env` file and fill in **your own _randomly created_ credentials**.
+
+```bash
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=YOUR_PASSWORD
+```
+
+🔐 **Important**: Never commit `.env` files containing credentials to version control.
+
+### 🐳 Docker container
+
+Create the `docker-compose.yml` and paste the following content into it.
+
+```yml
+services:
+  db:
+    image: postgres:17.5
+    restart: always
+    container_name: ln-history-database
+    environment:
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    env_file: .env
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer:latest
+    restart: always
+    container_name: adminer
+    ports:
+      - '8080:8080'
+```
+
+### Folder structure
+
+Ultimatly the folder structure should look like this:
+
+```bash
+database/
+├── .env                    # Environment variables for the service
+├── docker-compose.yml      # Docker setup for this service
+└── postgres-data           # Directory where the data is stored
+```
+
+## Run
+
+We start the container by using `docker compose up -d` (The flag `-d` abbreviates `deamon`, meaning background process).
+
+<TerminalOneLiner path="~/ln-history/database" command="docker compose up -d" />
+
+### Create tables
+
+On your server go into the docker container
+
+<TerminalOneLiner
+  path="~/ln-history/database"
+  command="docker exec -it ln-history-database psql -U admin"
+/>
+
+<div classes="docker-terminal">
+    #### Create nodes table
+
+    <DockerTerminalOneLiner pathInfo="admin=#" command={String.raw`CREATE TABLE nodes (
+    node_id CHAR(66) PRIMARY KEY,
+    from_timestamp TIMESTAMPTZ,
+    last_seen TIMESTAMPTZ);"`} />
+
+    #### Create nodes_raw_gossip table
+
+    <DockerTerminalOneLiner pathInfo="admin=#" command={String.raw`CREATE TABLE nodes_raw_gossip (
+    gossip_id VARCHAR(64) PRIMARY KEY,
+    node_id CHAR(66) REFERENCES nodes(node_id),
+    timestamp TIMESTAMPTZ,
+    raw_gossip BYTEA);`} />
+
+    #### Create channels table
+
+    <DockerTerminalOneLiner pathInfo="admin=#" command={String.raw`CREATE TABLE channels (
+    scid VARCHAR(23) PRIMARY KEY,
+    source_node_id CHAR(66) REFERENCES nodes(node_id),
+    target_node_id CHAR(66) REFERENCES nodes(node_id),
+    from_timestamp TIMESTAMPTZ,
+    to_timestamp TIMESTAMPTZ,
+    amount_sat INT,
+    raw_gossip BYTEA);`} />
+
+    #### Create channel_updates table
+
+    <DockerTerminalOneLiner pathInfo="admin=#" command={String.raw`CREATE TABLE channel_updates (
+    gossip_id VARCHAR(64) PRIMARY KEY,
+    scid VARCHAR(23) REFERENCES channels(scid),
+    direction BIT,
+    from_timestamp TIMESTAMPTZ,
+    to_timestamp TIMESTAMPTZ,
+    raw_gossip BYTEA);`} />
+
+</div>
+
+## Test Connection Without Installing PostgreSQL
+
+We test if the database has been sucessfully created without having to installed `psql` on the machine by just running this Docker command:
+
+<TerminalOneLiner command="docker run --rm -it --network host postgres:15 psql 'postgresql://admin:YOUR_PASSWORD@localhost:5432' " />
+### 🔁 Replace: Replace YOUR_PASSWORD with your actual password for the
+_ln-history-database_

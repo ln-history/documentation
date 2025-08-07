@@ -1,12 +1,14 @@
-/* Terminal Component Styles */
+/* ========== Terminal Component Styles ========== */
 .terminal {
   background-color: #111827;
-  border-radius: 8px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(55, 65, 81, 0.5);
-  overflow: hidden;
-  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-  font-size: 14px;
   border: 1px solid #374151;
+  border-radius: 8px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px
+    rgba(55, 65, 81, 0.5);
+  overflow: hidden;
+  font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas,
+    "Courier New", monospace;
+  font-size: 14px;
 }
 
 .terminal-header {
@@ -62,18 +64,23 @@
   margin-top: 8px;
 }
 
-/* Command Line Styles (shared between both components) */
+/* ========== Command Line Styles ========== */
 .command-line {
-  background-color: #111827;
-  border-radius: 6px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  background: #111827;
+  color: #eee;
+  font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas,
+    "Courier New", monospace;
   font-size: 14px;
+  border-radius: 6px;
   border: 1px solid #374151;
-  padding: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px
+    rgba(0, 0, 0, 0.06);
+  padding: 0.5em 1em;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 0.4em;
+  white-space: pre;
+  position: relative;
 }
 
 .command-line--in-terminal {
@@ -84,25 +91,45 @@
   margin-bottom: 0;
 }
 
+.command-user {
+  font-weight: bold;
+  color: #00afff;
+}
+
+.command-path {
+  color: #6ab04c;
+}
+
+.command-location {
+  color: #aaa;
+}
+
+.command-symbol {
+  margin-left: 0.25em;
+  color: #f1c40f;
+}
+
 .command-prompt {
   color: #4ade80;
   font-weight: 600;
 }
 
 .command-text {
-  color: #ffffff;
   flex: 1;
+  color: #ffffff;
 }
 
+/* ========== Terminal Cursor ========== */
 .terminal-cursor {
+  display: inline-block;
   width: 8px;
-  height: 16px;
+  height: 1em;
   background-color: #ffffff;
   margin-left: 4px;
-  animation: blink 1s infinite;
+  animation: blink 1s steps(2, start) infinite;
 }
 
-/* Copy Button Styles */
+/* ========== Copy Button ========== */
 .copy-button {
   background: rgba(55, 65, 81, 0.6);
   border: 1px solid rgba(75, 85, 99, 0.5);
@@ -149,11 +176,28 @@
   height: 16px;
 }
 
+/* ========== Cursor Animation ========== */
 @keyframes blink {
-  0%, 50% {
+  0%,
+  50% {
     opacity: 1;
+    visibility: visible;
   }
-  51%, 100% {
+  51%,
+  100% {
     opacity: 0;
+    visibility: hidden;
   }
+}
+
+.docker-terminal {
+  background-color: #001f3f;
+  border-radius: 8px;
+  padding: 16px;
+  font-family: monospace;
+  color: #7fdbff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  white-space: pre-wrap;
+  display: flex;
+  justify-content: space-between;
 }

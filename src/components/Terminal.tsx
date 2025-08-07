@@ -1,14 +1,23 @@
-import React from 'react';
-import '../styles/terminal.css';
+import type React from 'react';
+import '../styles/global.css';
 
 import CommandLine from './CommandLine';
 
 interface TerminalProps {
+  user?: string;
+  host?: string;
+  path?: string;
   command: string;
   children: React.ReactNode;
 }
 
-const Terminal: React.FC<TerminalProps> = ({ command, children }) => {
+const Terminal: React.FC<TerminalProps> = ({
+  user = 'ln-history',
+  host = 'host',
+  path = '~/ln-history',
+  command,
+  children,
+}) => {
   return (
     <div className="terminal">
       {/* Terminal Header */}
@@ -22,15 +31,20 @@ const Terminal: React.FC<TerminalProps> = ({ command, children }) => {
           <span className="terminal-title-text">Terminal</span>
         </div>
       </div> */}
-      
+
       {/* Terminal Content */}
       <div className="terminal-content">
-        <CommandLine command={command} showCursor={false} inTerminal={true} />
-        
+        <CommandLine
+          user={user}
+          host={host}
+          path={path}
+          command={command}
+          showCursor={false}
+          inTerminal={true}
+        />
+
         {/* Command Output */}
-        <div className="terminal-output">
-          {children}
-        </div>
+        <div className="terminal-output">{children}</div>
       </div>
     </div>
   );
