@@ -1,0 +1,105 @@
+import { Badge } from '@rspress/theme-default';
+import Terminal from '/src/components/Terminal';
+import TerminalOneLiner from '/src/components/TerminalOneLiner';
+
+
+# Gossip syncer <Badge text="easy" type="tip" />
+
+The [gossip-post-processor](https://github.com/ln-history/gossip-post-processor) service subscribes to a [Kafka](https://kafka.apache.org/) instance consuming [PlatformEvents](https://github.com/ln-history/ln-history-python-client/blob/main/lnhistoryclient/model/platform_internal/PlatformEvent.py) that have been published by the [gossip-syncer](https://github.com/ln-history/gossip-syncer).
+
+## Setup
+
+We will start by setting up the directory structure and continue with the docker container
+
+### Create directory
+
+From the project root we create the `gossip-post-processor` directory with the following command.
+
+<TerminalOneLiner
+  path="~/ln-history"
+  command="mkdir gossip-post-processor && cd gossip-post-processor"
+/>
+
+### Environment variables <Badge text="authentication" type="danger"/>
+
+Create an `.env` file and fill in your credentials.
+
+```bash
+KAFKA_SERVER_IP_ADDRESS=YOUR_SERVER_IP
+KAFKA_SERVER_PORT=9092
+
+KAFKA_SSL_PASSWORD=YOUR_KAFKA_SSL_PASSWORD
+KAFKA_SASL_PLAIN_USERNAME=YOUR_KAFKA_SALS_USER_NAME
+KAFKA_SASL_PLAIN_PASSWORD=YOUR_KAFKA_SASL_PASSWORD
+
+KAFKA_TOPIC_TO_PUSH='gossip'
+
+POSTGRE_SQL_HOST=YOUR_POSTGRESQL_HOST
+POSTGRE_SQL_PORT=5432
+POSTGRE_SQL_DB=ln-history-database
+POSTGRE_SQL_USER=admin
+POSTGRE_SQL_PASSWORD=YOUR_POSTGRESQL_PASSWORD
+
+EXPLORER_RPC_URL=YOUR_EXPLORER_RPC_URL
+EXPLORER_RPC_PASSWORD=YOUR_EXPLORER_RPC_PASSWORD
+```
+
+🔐 **Important**: Never commit `.env` files containing credentials to version control.
+
+### 🐳 Docker container
+
+Create the `docker-compose.yml` and paste the following content into it.
+
+```yml
+services:
+  app:
+    image: ghcr.io/ln-history/gossip-syncer:latest
+    container_name: gossip-post-processor
+    restart: always
+    ports:
+      - '6789:8080' (?)
+    environment:
+      - KAFKA_SERVER_IP_ADDRESS=${KAFKA_SERVER_IP_ADDRESS}
+      - KAFKA_SERVER_PORT=${KAFKA_SERVER_PORT}
+      - KAFKA_SSL_PASSWORD=${KAFKA_SSL_PASSWORD}
+      - KAFKA_SASL_PLAIN_USERNAME=${KAFKA_SASL_PLAIN_USERNAME}
+      - KAFKA_SASL_PLAIN_PASSWORD=${KAFKA_SASL_PLAIN_PASSWORD}
+      - KAFKA_TOPIC_TO_PUSH=${KAFKA_TOPIC_TO_PUSH}
+      - POSTGRE_SQL_HOST=${YOUR_POSTGRESQL_HOST}
+      - POSTGRE_SQL_PORT=${5432}
+      - POSTGRE_SQL_DB=${ln-history-database}
+      - POSTGRE_SQL_USER=${admin}
+      - POSTGRE_SQL_PASSWORD=${YOUR_POSTGRESQL_PASSWORD}
+      - EXPLORER_RPC_URL=${YOUR_EXPLORER_RPC_URL}
+      - EXPLORER_RPC_PASSWORD=${YOUR_EXPLORER_RPC_PASSWORD}
+    env_file:
+      - .env
+    pull_policy: always
+```
+
+### Folder structure
+
+Ultimatly the folder structure should look like this:
+
+```bash
+gossip-post-processor/
+├── docker-compose.yml      # Docker setup for this service
+└── .env                    # Environment variables for the service
+```
+
+## Run
+
+We start the container by using `docker compose up -d` (The flag `-d` abbreviates `deamon`, meaning background process).
+
+<TerminalOneLiner path="~/ln-history/gossip-post-processor" command="docker compose up -d" />
+
+## Verify
+
+See the logs of the docker container.
+
+<Terminal
+  command="docker compose logs -f --tail=100"
+  path="~/ln-history/gossip-post-processor"
+>
+  ???
+</Terminal>
