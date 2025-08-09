@@ -1,0 +1,108 @@
+import { Badge } from '@rspress/theme-default';
+import Terminal from '/src/components/Terminal';
+import TerminalOneLiner from '/src/components/TerminalOneLiner';
+
+# Backend <Badge text="easy" type="info" />
+
+This section sets up the docker container `ln-history-api` which connects to the _ln-history-database_ and processes those requests.
+The backend authorizes requests via a specified `ApiKey`.
+
+In case you want to get a deeper understanding about the backend, feel free to check out the [source code](https://github.com/ln-history/ln-history-api).
+
+## Setup
+
+We will start by setting up the directory structure and continue with the docker container
+
+### Create directory
+
+From the project root we create the `ln-history-api` directory with the following command.
+
+<TerminalOneLiner
+  path="~/ln-history"
+  command="mkdir ln-history-api && cd ln-history-api"
+/>
+
+### Environment variables <Badge text="authentication" type="danger"/>
+
+Create an `.env` file and fill in the `ConnectionStrings__PostgreSQL` of the _ln-history-database_ as well as the `ApiKey` and the `DOTNET_ENV`.
+The `ApiKey` will be later used to authorize requests sent to the backend.
+This is a _naive_ way to limit spam. You might want to consider using alternatives, like:
+
+- JWT (JSON Web Tokens) — stateless, signed tokens that can also carry user claims.
+- OAuth 2.0 — for delegated access from third-party apps or user authentication.
+- HMAC signatures — requests signed with a shared secret to verify authenticity.
+- mTLS (Mutual TLS) — client and server both authenticate via TLS certificates.
+
+```bash
+# PostgreSQL Connection
+ConnectionStrings__PostgreSQL=CONNECTION_STRING_LN_HISTORY_DATABASE
+
+# API Key
+ApiKey=YOUR_API_KEY
+
+# ASP.NET Core Environment
+DOTNET_ENV=Production
+```
+
+🔐 **Important**: Never commit `.env` files containing credentials to version control.
+
+### 🐳 Docker container
+
+Create the `docker-compose.yml` and paste the following content into it.
+
+```yml
+services:
+  app:
+    image: ghcr.io/ln-history/ln-history:latest
+    container_name: ln-history-api
+    restart: always
+    ports:
+      - '6789:8080'
+    environment:
+      - DOTNET_ENV=${DOTNET_ENV}
+      - ConnectionStrings__PostgreSQL=${ConnectionStrings__PostgreSQL}
+      - ConnectionStrings__QuestDb=${QuestDb__ConnectionString}
+      - ConnectionStrings__DuckDb=${ConnectionStrings__DuckDb}
+      - Threads=${Threads}
+      - ApiKey=${ApiKey}
+    env_file:
+      - .env
+    pull_policy: always
+    networks:
+      - proxy
+    volumes:
+      - /home/cicd-user/docker/ln-history-api/ln-history-database-v3.duckdb:/mnt/ln-history-database-v3.duckdb
+    user: '${APP_UID}'
+```
+
+### Folder structure
+
+Ultimatly the folder structure should look like this:
+
+```bash
+ln-history-api/
+├── docker-compose.yml      # Docker setup for this service
+└── .env                    # Environment variables for the service
+```
+
+## Run
+
+We start the container by using `docker compose up -d` (The flag `-d` abbreviates `deamon`, meaning background process).
+
+<TerminalOneLiner path="~/ln-history/database" command="docker compose up -d" />
+
+## Verify
+
+See the logs of the docker container.
+
+<Terminal
+  command="docker compose logs -f --tail=100"
+  path="~/ln-history/ln-history-api"
+>
+  ``` ln-history-api | info: Microsoft.Hosting.Lifetime[14] ln-history-api | Now
+  listening on: http://[::]:8080 ln-history-api | info:
+  Microsoft.Hosting.Lifetime[0] ln-history-api | Application started. Press
+  Ctrl+C to shut down. ln-history-api | info: Microsoft.Hosting.Lifetime[0]
+  ln-history-api | Hosting environment: Production ln-history-api | info:
+  Microsoft.Hosting.Lifetime[0] ln-history-api | Content root path: /app ```
+</Terminal>

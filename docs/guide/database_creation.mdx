@@ -134,9 +134,9 @@ On your server go into the docker container
   command="docker exec -it ln-history-database psql -U admin"
 />
 
-<div classes="docker-terminal">
-    #### Create nodes table
+Inside the docker container execute the following commands.
 
+<div className="docker-terminal">
     <DockerTerminalOneLiner pathInfo="admin=#" command={String.raw`CREATE TABLE nodes (
     node_id CHAR(66) PRIMARY KEY,
     from_timestamp TIMESTAMPTZ,
@@ -173,9 +173,9 @@ On your server go into the docker container
 
 </div>
 
-## Test Connection Without Installing PostgreSQL
+## Verify connection without installing PostgreSQL
 
-We test if the database has been sucessfully created without having to installed `psql` on the machine by just running this Docker command:
+We verify if the database has been sucessfully created without having to installed `psql` on the machine by just running this Docker command:
 
 <TerminalOneLiner command="docker run --rm -it --network host postgres:15 psql 'postgresql://admin:YOUR_PASSWORD@localhost:5432' " />
 ### 🔁 Replace: Replace YOUR_PASSWORD with your actual password for the

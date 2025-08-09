@@ -14,9 +14,9 @@ const DockerTerminalOneLiner: React.FC<DockerTerminalOneLinerProps> = ({
   inTerminal = false,
 }) => {
   return (
-    <div className="docker-terminal">
-      <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{pathInfo}</span>
-      <span style={{ color: '#add8e6' }}>{command}</span>
+    <div className="docker-terminal-one-liner">
+      <span>{pathInfo}</span>
+      <span>{command}</span>
       <CopyButton text={command} />
     </div>
   );

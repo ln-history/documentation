@@ -1,4 +1,5 @@
 import { Badge } from '@rspress/theme-default';
+import Terminal from '/src/components/Terminal';
 import DockerTerminalOneLiner from '/src/components/DockerTerminalOneLiner';
 
 # Database Optimizing
@@ -20,40 +21,388 @@ We will index the gossip messages such that queries on the tables run more quick
 
 ### nodes
 
-<DockerTerminalOneLiner command="CREATE INDEX idx_nodes_full_time_range ON public.nodes USING btree (from_timestamp DESC, last_seen DESC)" />
-<DockerTerminalOneLiner command="CREATE INDEX nodes_node_id_str ON public.nodes USING btree (node_id_str)" />
+<DockerTerminalOneLiner
+  pathInfo="admin=#"
+  command="CREATE INDEX idx_nodes_full_time_range ON public.nodes USING btree (from_timestamp DESC, last_seen DESC);"
+/>
+<DockerTerminalOneLiner
+  pathInfo="admin=#"
+  command="CREATE INDEX nodes_node_id_str ON public.nodes USING btree (node_id_str);"
+/>
 
 ### nodes_raw_gossip
 
-<DockerTerminalOneLiner command="CREATE UNIQUE INDEX nodes_raw_gossip_pkey ON public.nodes_raw_gossip USING btree (gossip_id)" />
-<DockerTerminalOneLiner command="CREATE INDEX nodes_raw_gossip_node_id_str ON public.nodes_raw_gossip USING btree (node_id_str)" />
-<DockerTerminalOneLiner command="CREATE INDEX idx_nodes_raw_gossip_node_ts ON public.nodes_raw_gossip USING btree (node_id_str, timestamp)" />
+<DockerTerminalOneLiner
+  pathInfo="admin=#"
+  command="CREATE UNIQUE INDEX nodes_raw_gossip_pkey ON public.nodes_raw_gossip USING btree (gossip_id);"
+/>
+<DockerTerminalOneLiner
+  pathInfo="admin=#"
+  command="CREATE INDEX nodes_raw_gossip_node_id_str ON public.nodes_raw_gossip USING btree (node_id_str);"
+/>
+<DockerTerminalOneLiner
+  pathInfo="admin=#"
+  command="CREATE INDEX idx_nodes_raw_gossip_node_ts ON public.nodes_raw_gossip USING btree (node_id_str, timestamp);"
+/>
+<DockerTerminalOneLiner
+  pathInfo="admin=#"
+  command="CREATE INDEX idx_nodes_raw_gossip_ts ON public.nodes_raw_gossip USING btree (timestamp);"
+/>
 
 ### channel_announcements
 
-<DockerTerminalOneLiner command="CREATE UNIQUE INDEX channels_pkey ON public.channels USING btree (scid)" />
-<DockerTerminalOneLiner command="CREATE INDEX idx_channels_full_time_range ON public.channels USING btree (from_timestamp DESC, to_timestamp DESC)" />
-<DockerTerminalOneLiner command="CREATE INDEX channels_source_node_id_str ON public.channels USING btree (source_node_id_str)" />
-<DockerTerminalOneLiner command="CREATE INDEX channels_target_node_id_str ON public.channels USING btree (target_node_id_str)" />
+<DockerTerminalOneLiner
+  pathInfo="admin=#"
+  command="CREATE UNIQUE INDEX channels_pkey ON public.channels USING btree (scid);"
+/>
+<DockerTerminalOneLiner
+  pathInfo="admin=#"
+  command="CREATE INDEX idx_channels_full_time_range ON public.channels USING btree (from_timestamp DESC, to_timestamp DESC);"
+/>
+<DockerTerminalOneLiner
+  pathInfo="admin=#"
+  command="CREATE INDEX channels_source_node_id_str ON public.channels USING btree (source_node_id_str);"
+/>
+<DockerTerminalOneLiner
+  pathInfo="admin=#"
+  command="CREATE INDEX channels_target_node_id_str ON public.channels USING btree (target_node_id_str);"
+/>
 
 ### channel_updates
 
 <DockerTerminalOneLiner
-  command="
-indexdef
-CREATE UNIQUE INDEX channel_updates_scid_direction_valid_from ON public.channel_updates USING btree (scid, direction, from_timestamp)"
+  pathInfo="admin=#"
+  command="CREATE UNIQUE INDEX channel_updates_scid_direction_valid_from ON public.channel_updates USING btree (scid, direction, from_timestamp);"
 />
-<DockerTerminalOneLiner command="CREATE UNIQUE INDEX channel_updates_gossip_id ON public.channel_updates USING btree (gossip_id)" />
-<DockerTerminalOneLiner command="CREATE INDEX channel_updates_valid_from_valid_to ON public.channel_updates USING btree (from_timestamp DESC, to_timestamp DESC)" />
-<DockerTerminalOneLiner command="" />
+<DockerTerminalOneLiner
+  pathInfo="admin=#"
+  command="CREATE UNIQUE INDEX channel_updates_gossip_id ON public.channel_updates USING btree (gossip_id);"
+/>
+<DockerTerminalOneLiner
+  pathInfo="admin=#"
+  command="CREATE UNIQUE INDEX channel_updates_scid_direction_valid_from ON public.channel_updates USING btree (scid, direction, from_timestamp);"
+/>
+<DockerTerminalOneLiner
+  pathInfo="admin=#"
+  command="CREATE INDEX channel_updates_valid_from_valid_to ON public.channel_updates USING btree (from_timestamp DESC, to_timestamp DESC);"
+/>
 
 ## Clustering
 
+Clustering is a Postgres [feature](https://www.postgresql.org/docs/current/sql-cluster.html), that can organize data on the disk to be correlated to their logical value.
+In our case organizing the tables by (`from_timestamp`, `to_timestamp`) will make the queries much faster.
+
+Clustering the data can take time (multiple minutes).
+
+### nodes_raw_gossip
+
+<DockerTerminalOneLiner
+  pathInfo="admin=#"
+  command="CLUSTER nodes_raw_gossip USING idx_nodes_raw_gossip_ts;"
+/>
+
+### channels
+
+<DockerTerminalOneLiner
+  pathInfo="admin=#"
+  command="CLUSTER channels USING idx_channels_full_time_range;"
+/>
+
+### channel_updates
+
+<DockerTerminalOneLiner
+  pathInfo="admin=#"
+  command="CLUSTER channel_updates USING channel_updates_valid_from_valid_to;"
+/>
+
 ## Testing
+
+After clustering the data we should test if everything is correctly working.
+We will take a look at the correlation as well as the prognosted cost.
 
 ### Correlation
 
-### Explain, Analyze, Buffers
+Postgres is able to calculate the correlation of a column. We will verify if the clustering as worked out correctly.
+
+#### nodes_raw_gossip
+
+<Terminal
+  command="SELECT attname, correlation
+FROM pg_stats
+WHERE tablename = 'nodes_raw_gossip'"
+>
+  <pre>
+    <code>
+      attname correlation
+      <span style={{ color: 'red' }}>timestamp 1</span>
+      gossip_id 0.0075054783 gossip_id_str 0.0075054783 node_id_str 0.001692843
+      raw_gossip -0.0044449237 node_id 0.001692843
+    </code>
+  </pre>
+</Terminal>
+
+The result should show a value close to `-1` or `1` for the columns `from_timestamp` and `to_timestamp`
+
+#### channels
+
+<Terminal
+  command="SELECT attname, correlation
+FROM pg_stats
+WHERE tablename = 'channels'"
+>
+  <pre>
+    <code>
+      attname correlation target_node_id -0.020106751 validity NULL
+      <span style={{ color: 'red' }}>to_timestamp 0.91803235</span>
+      <span style={{ color: 'red' }}>from_timestamp 0.9151373</span>
+      raw_gossip -0.04443083 gossip_id 0.0037462101 amount_sat 0.34241602
+      source_node_id_str 0.029644588 target_node_id_str -0.020106751 scid
+      0.9151351 source_node_id 0.029644588
+    </code>
+  </pre>
+</Terminal>
+
+The result should show a value close to `-1` or `1` for the columns `from_timestamp` and `to_timestamp`
+
+#### channel_updates
+
+<Terminal
+  command="SELECT attname, correlation
+FROM pg_stats
+WHERE tablename = 'channel_updates'"
+>
+  <pre>
+    <code>
+      attname correlation gossip_id 0.005212686 direction 0.5040172
+      <span style={{ color: 'red' }}>from_timestamp -0.9620432</span>
+      <span style={{ color: 'red' }}>to_timestamp -0.964768</span>
+      scid -0.8286454 raw_gossip 0.029840102
+    </code>
+  </pre>
+</Terminal>
+
+The result should show a value close to `-1` or `1` for the columns `from_timestamp` and `to_timestamp`
+
+### Explain
+
+As a last step before we setup the [backend](https://github.com/ln-history/ln-history-api), is to verify if Postgre estiamtes the costs of our queries low.
+We wil use Postgres' [EXPLAIN](https://www.postgresql.org/docs/17/using-explain.html) feature which gives us detailed results
+
+We need to write a valid query, meaning that we need to replace the variables with actual values (for `from_timestamp`, `to_timestamp`, `scid`, `node_id`, `timestamp`).
+
+#### Snapshot generation
+
+<Terminal command="">```mdx // TO DO ```</Terminal>
+
+#### Snapshot diff calculation
+
+<Terminal command="">```mdx // TO DO ```</Terminal>
+
+#### Node Information by timestamp and node_id
+
+<Terminal command="EXPLAIN (ANALYZE, BUFFERS)
+-- Get all nodes_raw_gossip for the node_id up until the given timestamp
+        SELECT nrg.raw_gossip
+        FROM nodes_raw_gossip nrg
+        WHERE nrg.node_id_str = '0364913d18a19c671bb36dd04d6ad5be0fe8f2894314c36a9db3f03c2d414907e1'
+          AND nrg.timestamp <= TIMESTAMPTZ '06-07-2022'
+
+        UNION ALL
+
+        -- Get channels where the node is either source or target
+        SELECT c.raw_gossip
+        FROM channels c
+        WHERE (c.source_node_id_str = '0364913d18a19c671bb36dd04d6ad5be0fe8f2894314c36a9db3f03c2d414907e1' OR c.target_node_id_str = '0364913d18a19c671bb36dd04d6ad5be0fe8f2894314c36a9db3f03c2d414907e1')
+          AND c.from_timestamp <= TIMESTAMPTZ '06-07-2022'
+          AND (c.to_timestamp IS NULL OR c.to_timestamp > TIMESTAMPTZ '06-07-2022')
+
+        UNION ALL
+
+        -- Get latest channel_updates for channels involving this node
+        SELECT cu.raw_gossip
+        FROM channel_updates cu
+        WHERE cu.scid IN (
+            SELECT c.scid
+            FROM channels c
+            WHERE (c.source_node_id_str = '0364913d18a19c671bb36dd04d6ad5be0fe8f2894314c36a9db3f03c2d414907e1' OR c.target_node_id_str = '0364913d18a19c671bb36dd04d6ad5be0fe8f2894314c36a9db3f03c2d414907e1')
+              AND c.from_timestamp <= TIMESTAMPTZ '06-07-2022'
+              AND (c.to_timestamp IS NULL OR c.to_timestamp > TIMESTAMPTZ '06-07-2022')
+        )
+        AND cu.from_timestamp <= TIMESTAMPTZ '06-07-2022'
+        AND cu.to_timestamp > TIMESTAMPTZ '06-07-2022'">
+
+```mdx
+QUERY PLAN
+Append (cost=0.56..45109.72 rows=2294 width=202) (actual time=0.303..8.914 rows=4 loops=1)
+Buffers: shared hit=527 read=6
+-> Index Scan using idx_nodes_raw_gossip_node_ts on nodes_raw_gossip nrg (cost=0.56..139.40 rows=122 width=307) (actual time=0.302..0.526 rows=3 loops=1)
+Index Cond: ((node_id_str = '0364913d18a19c671bb36dd04d6ad5be0fe8f2894314c36a9db3f03c2d414907e1'::bpchar) AND ("timestamp" <= '2022-06-07 00:00:00+00'::timestamp with time zone))
+Buffers: shared hit=4 read=3
+-> Bitmap Heap Scan on channels c (cost=13.50..1345.75 rows=407 width=436) (actual time=0.891..0.892 rows=1 loops=1)
+Recheck Cond: ((source_node_id_str = '0364913d18a19c671bb36dd04d6ad5be0fe8f2894314c36a9db3f03c2d414907e1'::bpchar) OR (target_node_id_str = '0364913d18a19c671bb36dd04d6ad5be0fe8f2894314c36a9db3f03c2d414907e1'::bpchar))
+Filter: ((from_timestamp <= '2022-06-07 00:00:00+00'::timestamp with time zone) AND ((to_timestamp IS NULL) OR (to_timestamp > '2022-06-07 00:00:00+00'::timestamp with time zone)))
+Rows Removed by Filter: 1216
+Heap Blocks: exact=254
+Buffers: shared hit=261
+-> BitmapOr (cost=13.50..13.50 rows=1220 width=0) (actual time=0.110..0.111 rows=0 loops=1)
+Buffers: shared hit=7
+-> Bitmap Index Scan on channels_source_node_id_str (cost=0.00..5.28 rows=501 width=0) (actual time=0.043..0.043 rows=460 loops=1)
+Index Cond: (source_node_id_str = '0364913d18a19c671bb36dd04d6ad5be0fe8f2894314c36a9db3f03c2d414907e1'::bpchar)
+Buffers: shared hit=3
+-> Bitmap Index Scan on channels_target_node_id_str (cost=0.00..8.02 rows=719 width=0) (actual time=0.067..0.067 rows=757 loops=1)
+Index Cond: (target_node_id_str = '0364913d18a19c671bb36dd04d6ad5be0fe8f2894314c36a9db3f03c2d414907e1'::bpchar)
+Buffers: shared hit=4
+-> Gather (cost=1014.06..43613.10 rows=1765 width=141) (actual time=4.699..7.493 rows=0 loops=1)
+Workers Planned: 1
+Workers Launched: 1
+Buffers: shared hit=262 read=3
+-> Nested Loop (cost=14.06..42436.60 rows=1038 width=141) (actual time=0.574..0.574 rows=0 loops=2)
+Buffers: shared hit=262 read=3
+-> Parallel Bitmap Heap Scan on channels c_1 (cost=13.50..1335.71 rows=239 width=13) (actual time=0.497..0.497 rows=0 loops=2)
+Recheck Cond: ((source_node_id_str = '0364913d18a19c671bb36dd04d6ad5be0fe8f2894314c36a9db3f03c2d414907e1'::bpchar) OR (target_node_id_str = '0364913d18a19c671bb36dd04d6ad5be0fe8f2894314c36a9db3f03c2d414907e1'::bpchar))
+Filter: ((from_timestamp <= '2022-06-07 00:00:00+00'::timestamp with time zone) AND ((to_timestamp IS NULL) OR (to_timestamp > '2022-06-07 00:00:00+00'::timestamp with time zone)))
+Rows Removed by Filter: 608
+Heap Blocks: exact=254
+Buffers: shared hit=261
+-> BitmapOr (cost=13.50..13.50 rows=1220 width=0) (actual time=0.579..0.580 rows=0 loops=1)
+Buffers: shared hit=7
+-> Bitmap Index Scan on channels_source_node_id_str (cost=0.00..5.28 rows=501 width=0) (actual time=0.507..0.507 rows=460 loops=1)
+Index Cond: (source_node_id_str = '0364913d18a19c671bb36dd04d6ad5be0fe8f2894314c36a9db3f03c2d414907e1'::bpchar)
+Buffers: shared hit=3
+-> Bitmap Index Scan on channels_target_node_id_str (cost=0.00..8.02 rows=719 width=0) (actual time=0.072..0.072 rows=757 loops=1)
+Index Cond: (target_node_id_str = '0364913d18a19c671bb36dd04d6ad5be0fe8f2894314c36a9db3f03c2d414907e1'::bpchar)
+Buffers: shared hit=4
+-> Index Scan using channel_updates_scid_direction_valid_from on channel_updates cu (cost=0.56..171.80 rows=17 width=154) (actual time=0.151..0.151 rows=0 loops=1)
+Index Cond: (((scid)::text = (c_1.scid)::text) AND (from_timestamp <= '2022-06-07 00:00:00+00'::timestamp with time zone))
+Filter: (to_timestamp > '2022-06-07 00:00:00+00'::timestamp with time zone)
+Buffers: shared hit=1 read=3
+Planning:
+Buffers: shared hit=555
+Planning Time: 2.223 ms
+Execution Time: 9.017 ms
+```
+
+</Terminal>
+
+#### Channel Information by timestamp and scid
+
+<Terminal command="EXPLAIN (ANALYZE, BUFFERS) 
+-- Get the channel by scid
+            SELECT c.raw_gossip
+            FROM channels c
+            WHERE c.scid = @scid
+              AND c.from_timestamp <= @timestamp
+              AND (c.to_timestamp IS NULL OR c.to_timestamp > @timestamp)
+
+            UNION ALL
+
+            -- Get all channel_updates for this scid up until the given timestamp
+            SELECT cu.raw_gossip
+            FROM channel_updates cu
+            WHERE cu.scid = @scid
+              AND cu.from_timestamp <= @timestamp
+
+            UNION ALL
+
+            -- Get latest nodes_raw_gossip for both source and target nodes
+            SELECT nrg.raw_gossip
+            FROM nodes_raw_gossip nrg
+            WHERE nrg.node_id IN (
+                SELECT c.source_node_id
+                FROM channels c
+                WHERE c.scid = @scid
+                  AND c.from_timestamp <= @timestamp
+                  AND (c.to_timestamp IS NULL OR c.to_timestamp > @timestamp)
+                UNION
+                SELECT c.target_node_id
+                FROM channels c
+                WHERE c.scid = @scid
+                  AND c.from_timestamp <= @timestamp
+                  AND (c.to_timestamp IS NULL OR c.to_timestamp > @timestamp)
+            )
+            AND nrg.timestamp <= @timestamp
+            AND nrg.timestamp = (
+                SELECT MAX(nrg2.timestamp)
+                FROM nodes_raw_gossip nrg2
+                WHERE nrg2.node_id = nrg.node_id
+                  AND nrg2.timestamp <= @timestamp
+            )
+
+">
+
+```mdx
+QUERY PLAN
+Append (cost=0.42..15340.06 rows=16483 width=141) (actual time=0.742..598.990 rows=29220 loops=1)
+Buffers: shared hit=75 read=29506
+-> Index Scan using channels_pkey on channels c (cost=0.42..2.65 rows=1 width=436) (actual time=0.741..0.742 rows=1 loops=1)
+Index Cond: ((scid)::text = '534826x1197x0'::text)
+Filter: ((from_timestamp <= '2021-06-07 00:00:00+00'::timestamp with time zone) AND ((to_timestamp IS NULL) OR (to_timestamp > '2021-06-07 00:00:00+00'::timestamp with time zone)))
+Buffers: shared read=4
+-> Index Scan using channel_updates_scid_direction_valid_from on channel_updates cu (cost=0.56..12710.67 rows=16481 width=141) (actual time=0.408..593.138 rows=29217 loops=1)
+Index Cond: (((scid)::text = '534826x1197x0'::text) AND (from_timestamp <= '2021-06-07 00:00:00+00'::timestamp with time zone))
+Buffers: shared hit=1 read=29479
+-> Nested Loop (cost=29.87..2544.33 rows=1 width=307) (actual time=2.133..3.238 rows=2 loops=1)
+Buffers: shared hit=74 read=23
+-> Unique (cost=5.31..5.32 rows=2 width=32) (actual time=0.068..0.069 rows=2 loops=1)
+Buffers: shared hit=7 read=4
+-> Sort (cost=5.31..5.32 rows=2 width=32) (actual time=0.067..0.067 rows=2 loops=1)
+Sort Key: c_1.source_node_id
+Sort Method: quicksort Memory: 25kB
+Buffers: shared hit=7 read=4
+-> Append (cost=0.42..5.30 rows=2 width=32) (actual time=0.022..0.028 rows=2 loops=1)
+Buffers: shared hit=4 read=4
+-> Index Scan using channels_pkey on channels c_1 (cost=0.42..2.65 rows=1 width=34) (actual time=0.021..0.021 rows=1 loops=1)
+Index Cond: ((scid)::text = '534826x1197x0'::text)
+Filter: ((from_timestamp <= '2021-06-07 00:00:00+00'::timestamp with time zone) AND ((to_timestamp IS NULL) OR (to_timestamp > '2021-06-07 00:00:00+00'::timestamp with time zone)))
+Buffers: shared read=4
+-> Index Scan using channels_pkey on channels c_2 (cost=0.42..2.65 rows=1 width=34) (actual time=0.006..0.006 rows=1 loops=1)
+Index Cond: ((scid)::text = '534826x1197x0'::text)
+Filter: ((from_timestamp <= '2021-06-07 00:00:00+00'::timestamp with time zone) AND ((to_timestamp IS NULL) OR (to_timestamp > '2021-06-07 00:00:00+00'::timestamp with time zone)))
+Buffers: shared hit=4
+-> Bitmap Heap Scan on nodes_raw_gossip nrg (cost=24.56..1269.50 rows=1 width=341) (actual time=1.582..1.583 rows=1 loops=2)
+Recheck Cond: ((node_id = c_1.source_node_id) AND ("timestamp" <= '2021-06-07 00:00:00+00'::timestamp with time zone))
+Filter: ("timestamp" = (SubPlan 1))
+Rows Removed by Filter: 0
+Heap Blocks: exact=3
+Buffers: shared hit=67 read=19
+-> BitmapAnd (cost=24.56..24.56 rows=24 width=0) (actual time=0.792..0.792 rows=0 loops=2)
+Buffers: shared hit=17 read=16
+-> Bitmap Index Scan on nodes_raw_gossip_node_id (cost=0.00..3.08 rows=206 width=0) (actual time=0.222..0.222 rows=2 loops=2)
+Index Cond: (node_id = c_1.source_node_id)
+Buffers: shared hit=1 read=5
+-> Bitmap Index Scan on idx_nodes_raw_gossip_ts_brin (cost=0.00..20.61 rows=499313 width=0) (actual time=0.568..0.568 rows=257280 loops=2)
+Index Cond: ("timestamp" <= '2021-06-07 00:00:00+00'::timestamp with time zone)
+Buffers: shared hit=16 read=11
+SubPlan 1
+-> Aggregate (cost=50.75..50.76 rows=1 width=8) (actual time=0.490..0.490 rows=1 loops=3)
+Buffers: shared hit=49 read=1
+-> Bitmap Heap Scan on nodes_raw_gossip nrg2 (cost=23.95..50.69 rows=24 width=8) (actual time=0.429..0.488 rows=2 loops=3)
+Recheck Cond: ((node_id = nrg.node_id) AND ("timestamp" <= '2021-06-07 00:00:00+00'::timestamp with time zone))
+Heap Blocks: exact=5
+Buffers: shared hit=49 read=1
+-> BitmapAnd (cost=23.95..23.95 rows=24 width=0) (actual time=0.426..0.426 rows=0 loops=3)
+Buffers: shared hit=45
+-> Bitmap Index Scan on nodes_raw_gossip_node_id (cost=0.00..3.08 rows=206 width=0) (actual time=0.002..0.002 rows=2 loops=3)
+Index Cond: (node_id = nrg.node_id)
+Buffers: shared hit=9
+-> Bitmap Index Scan on idx_nodes_raw_gossip_ts_brin (cost=0.00..20.61 rows=499313 width=0) (actual time=0.424..0.424 rows=257280 loops=3)
+Index Cond: ("timestamp" <= '2021-06-07 00:00:00+00'::timestamp with time zone)
+Buffers: shared hit=36
+Planning:
+Buffers: shared hit=457 read=14
+Planning Time: 3.836 ms
+Execution Time: 600.129 ms
+```
+
+</Terminal>
+
+---
+
+The cost should be low. I would say that any value below `2000` can be considered low.
+
+## Outlook
+
+As the last step we will put a backend _in front_ of the _ln-history-database_.
 
 ## More information
 

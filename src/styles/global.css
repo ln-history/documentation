@@ -198,6 +198,16 @@
   color: #7fdbff;
   border: 1px solid rgba(255, 255, 255, 0.1);
   white-space: pre-wrap;
+}
+
+.docker-terminal-one-liner {
+  background-color: #003366;
+  border-radius: 8px;
+  padding: 16px;
+  font-family: monospace;
+  color: #7fdbff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  white-space: pre-wrap;
   display: flex;
   justify-content: space-between;
 }

@@ -8,8 +8,8 @@ repos:
 
   - repo: local
     hooks:
-      - id: bun-format-lint-check
-        name: Run bun format, lint, and check
+      - id: bun-format-check
+        name: Run bun format and check
         entry: bash
         language: system
         pass_filenames: false
