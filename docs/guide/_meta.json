@@ -14,7 +14,7 @@
   {
     "type": "dir",
     "name": "static",
-    "label": "static",
+    "label": "Static",
     "collapsible": true,
     "collapsed": false,
     "tag": "<svg width=\"1em\" height=\"1em\" viewBox=\"0 0 32 32\"><path fill=\"currentColor\" d=\"M4 6h24v2H4zm0 18h24v2H4zm0-12h24v2H4zm0 6h24v2H4z\"/></svg>"
@@ -22,7 +22,7 @@
   {
     "type": "dir",
     "name": "live",
-    "label": "live",
+    "label": "Live",
     "collapsible": true,
     "collapsed": false,
     "tag": "<svg width=\"1em\" height=\"1em\" viewBox=\"0 0 32 32\"><path fill=\"currentColor\" d=\"M4 6h24v2H4zm0 18h24v2H4zm0-12h24v2H4zm0 6h24v2H4z\"/></svg>"
