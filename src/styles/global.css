@@ -208,6 +208,9 @@
   color: #7fdbff;
   border: 1px solid rgba(255, 255, 255, 0.1);
   white-space: pre-wrap;
+  margin-top: 16px;
   display: flex;
-  justify-content: space-between;
+  align-items: center;   /* vertically align items */
+  justify-content: space-between; /* everything aligned to the left */
+  gap: 8px;              /* space between pathInfo, command, and button */
 }

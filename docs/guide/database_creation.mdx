@@ -3,6 +3,8 @@ import TerminalOneLiner from '/src/components/TerminalOneLiner';
 import DockerTerminal from '/src/components/DockerTerminal';
 import DockerTerminalOneLiner from '/src/components/DockerTerminalOneLiner';
 
+{/* DONE TESTING */}
+
 # Database - Creation <Badge text="easy" type="tip" />
 
 The database _ln-history-database_ is a [Postgres](https://postgresql.org) database.
@@ -22,22 +24,22 @@ erDiagram
     channels ||--o{ channel_updates : has
 
     nodes {
-        char(66) node_id PK
+        varchar(66) node_id PK
         tztimestamp from_timestamp
         tztimestamp last_seen
     }
 
     nodes_raw_gossip {
         varchar(64) gossip_id PK
-        char(66) node_id FK
+        varchar(66) node_id FK
         tztimestamp timestamp
         bytea raw_gossip
     }
 
     channels {
         varchar(23) scid PK
-        char(66) source_node_id FK
-        char(66) target_node_id FK
+        varchar(66) source_node_id FK
+        varchar(66) target_node_id FK
         tztimestamp from_timestamp
         tztimestamp to_timestamp
         int amount_sat
@@ -137,33 +139,39 @@ On your server go into the docker container
 Inside the docker container execute the following commands.
 
 <div className="docker-terminal">
-    <DockerTerminalOneLiner pathInfo="admin=#" command={String.raw`CREATE TABLE nodes (
-    node_id CHAR(66) PRIMARY KEY,
+    <DockerTerminalOneLiner pathInfo="admin=#"command={String.raw`-- Create the ln-history-database
+    CREATE DATABASE "ln-history-database" OWNER admin;`} />
+
+    <DockerTerminalOneLiner pathInfo="admin=#"command={String.raw`-- Connect to database
+    \c "ln-history-database"`} />
+
+    <DockerTerminalOneLiner pathInfo="admin=#" command={String.raw`-- Create nodes table
+    CREATE TABLE nodes (
+    node_id VARCHAR(66) PRIMARY KEY,
     from_timestamp TIMESTAMPTZ,
     last_seen TIMESTAMPTZ);"`} />
 
-    #### Create nodes_raw_gossip table
-
-    <DockerTerminalOneLiner pathInfo="admin=#" command={String.raw`CREATE TABLE nodes_raw_gossip (
+    <DockerTerminalOneLiner pathInfo="admin=#"command={String.raw`-- Create nodes_raw_gossip table
+    CREATE TABLE nodes_raw_gossip (
     gossip_id VARCHAR(64) PRIMARY KEY,
-    node_id CHAR(66) REFERENCES nodes(node_id),
+    node_id VARCHAR(66) REFERENCES nodes(node_id),
     timestamp TIMESTAMPTZ,
     raw_gossip BYTEA);`} />
 
-    #### Create channels table
+    #### 
 
-    <DockerTerminalOneLiner pathInfo="admin=#" command={String.raw`CREATE TABLE channels (
+    <DockerTerminalOneLiner pathInfo="admin=#" command={String.raw`-- Create channels table
+    CREATE TABLE channels (
     scid VARCHAR(23) PRIMARY KEY,
-    source_node_id CHAR(66) REFERENCES nodes(node_id),
-    target_node_id CHAR(66) REFERENCES nodes(node_id),
+    source_node_id VARCHAR(66) REFERENCES nodes(node_id),
+    target_node_id VARCHAR(66) REFERENCES nodes(node_id),
     from_timestamp TIMESTAMPTZ,
     to_timestamp TIMESTAMPTZ,
     amount_sat INT,
     raw_gossip BYTEA);`} />
 
-    #### Create channel_updates table
-
-    <DockerTerminalOneLiner pathInfo="admin=#" command={String.raw`CREATE TABLE channel_updates (
+    <DockerTerminalOneLiner pathInfo="admin=#" command={String.raw`-- Create channel_updates table
+    CREATE TABLE channel_updates (
     gossip_id VARCHAR(64) PRIMARY KEY,
     scid VARCHAR(23) REFERENCES channels(scid),
     direction BIT,
@@ -173,10 +181,11 @@ Inside the docker container execute the following commands.
 
 </div>
 
+We exit the docker container by pressing `CTRL + D`.
+
 ## Verify connection without installing PostgreSQL
 
 We verify if the database has been sucessfully created without having to installed `psql` on the machine by just running this Docker command:
 
 <TerminalOneLiner command="docker run --rm -it --network host postgres:15 psql 'postgresql://admin:YOUR_PASSWORD@localhost:5432' " />
-### 🔁 Replace: Replace YOUR_PASSWORD with your actual password for the
-_ln-history-database_
+**🔁 Replace** `YOUR_PASSWORD` with your actual password for the _ln-history-database_
