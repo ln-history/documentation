@@ -2,9 +2,9 @@ import { Badge } from '@rspress/theme-default';
 import Terminal from '/src/components/Terminal';
 import TerminalOneLiner from '/src/components/TerminalOneLiner';
 
-# Static Data Insertion <Badge text="easy" type="tip" />
+# Bulk import <Badge text="easy" type="tip" /> 
 
-This section sets up the docker container `insert-gossip` which is able to read gossip messages in bytes format from a specified file.
+This section sets up the docker container [insert-gossip](https://github.com/ln-history/insert-gossip) which is able to read gossip messages in bytes format from a specified file.
 Such a file is e. g. the `gossip_store` file that gets created by a [Core Lightning node](https://corelightning.org/) automatically.
 
 In case you want to get a deeper understanding about this file, feel free to check out the [official documentation](https://docs.corelightning.org/docs/contribute-to-core-lightning#gossip_store-direct-access-to-lightning-gossip) as well as the source code of the [insert-gossip](https://github.com/ln-history/insert-gossip) service.
@@ -24,12 +24,13 @@ From the project root we create the `insert-gossip` directory with the following
 
 ### Environment variables <Badge text="authentication" type="danger"/>
 
-Create an `.env` file and fill in the **url of your blockchain rpc explorer** as well as the file_path to the file with the raw gossip.
-The easiest way would be to just copy your `gossip_store` file in this directory.
+Create an `.env` file and fill in your credentials. 
+The easiest way would be to just copy your `gossip_store` file from your [Core Lightning node](https://corelightning.org/) in this directory.
 
 ```bash
-FILE_PATH=gossip_store                                                  # Or any other file path
+FILE_PATH=gossip_store                                                  # File path to gossip_messages
 BLOCKCHAIN_RPC_URL=YOUR_BLOCKCHAIN_RPC_URL                              # See the introduction for details
+EXPLORER_RPC_PASSWORD=YOUR_BLOCKCHAIN_RPC_PASSWORD                      # Password protection of the web interface with BASIC AUTH
 LN_HISTORY_DATABASE_CONNECTION_STRING=YOUR_DATABASE_CONNECTION_STRING   # The connection string to your ln-history-database
 ```
 
@@ -48,6 +49,8 @@ services:
     environment:
       FILE_PATH: $FILE_PATH
       BLOCKCHAIN_RPC_URL: $BLOCKCHAIN_RPC_URL
+      EXPLORER_RPC_PASSWORD: $EXPLORER_RPC_PASSWORD
+      LN_HISTORY_DATABASE_CONNECTION_STRING: $LN_HISTORY_DATABASE_CONNECTION_STRING
     env_file: .env
     volumes: file_path?
 ```
@@ -59,6 +62,7 @@ Ultimatly the folder structure should look like this:
 ```bash
 database/
 ├── docker-compose.yml      # Docker setup for this service
+├── .env                    # .env file with credentials
 └── gossip_store            # The file that contains the gossip messages in raw bytes
 ```
 
@@ -88,7 +92,7 @@ You can monitor the progess of the insertion by executing the following command.
 
 You can always access the logs by pressing `CTRL + C`.
 
-### Phase 1
+### Phase 1: Splitting 
 
 The `insert-gossip` service will first iterate through the whole file and log statistics about the parsable gossip messages found.
 During that run it is sorting the gossip messages into three seperate files `node_announcements.bin`, `channel_announcements.bin`, `channel_updates.bin`.
@@ -130,7 +134,7 @@ You can see the statistics in the logs:
 
 </Terminal>
 
-### Phase 2
+### Phase 2: DuckDB Setup 
 
 The `insert-gossip` service will setup a [DuckDB](https://duckdb.org) - an in-memory database - that temporarly stores the gossip messages in the file `temp-db.duckdb`.
 The DuckDB has the same schema as the _ln-history-database_.
@@ -226,7 +230,7 @@ Every `channel_update` gets inserted into the `channel_updates` table.
 
 </Terminal>
 
-### Phase 3
+### Phase 3: Export data
 
 After the duckdb tables in the `temp-db.duckdb` have been filled completly, the `insert-gossip` services exports each table as a parquet file (?).
 As the last step of the insertion, the service imports the created parquet (?) files into the postgresql database.
@@ -255,7 +259,7 @@ As the last step of the insertion, the service imports the created parquet (?) f
 
 </Terminal>
 
-### Phase 4
+### Phase 4: Import data
 
 <Terminal command="docker compose logs -f --tail=100" path="~/ln-history/insert-gossip">
     ```

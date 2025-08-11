@@ -1,0 +1,156 @@
+import {Badge} from "@rspress/theme-default";
+import TerminalOneLiner from "/src/components/TerminalOneLiner";
+import Terminal from "/src/components/Terminal";
+
+# Direct request <Badge text="very easy" type="tip" />
+
+## Introduction
+
+You want to start right away generating snapshots, getting snapshot differences or just analyze particular channels or nodes and do not have any gossip data?
+
+No problem, I provide the necessary infrastructure for that. To limit access you need to have an `ApiKey`. Please fill out the form below and I will give you an `ApiKey` for free.
+
+This is a temporary solution and has the advantage that the server does not get shot down easily and you do _not_ have to register with your data.
+
+
+## Setup
+
+### Prerequisits
+
+You need to have [Python 3](https://python.org) installed on your machine.
+Verify if the following command yields to the same result
+<Terminal command="python --version">
+Python 3.13.4
+</Terminal>
+
+_Note that the library should work for every python `3.x` version. It has been extensivly tested for python `3.13`, which I recommend._
+
+
+### Environment
+
+I highly recommend using virtual environments to manage dependencies. You will need the [ln-history-python-client](https://github.com/ln-history/ln-history-python-client) library, so you can easily parse the gossip messages which will be returned as raw bytes into something more readable, e. g. `JSON` format.
+
+We first create the virtual environment `.venv`. We assume that you have python installed on your system 
+<TerminalOneLiner user="you" host="local" path="path/to/your-project" command="python -m venv .venv" />
+
+Next we activate the virtual environment
+<TerminalOneLiner user="you" host="local" path="path/to/your-project" command="source .venv/bin/activate" />
+
+You should now see a `(.venv)` at the front in your shell, something like this
+<TerminalOneLiner user="(.venv) you" host="local" path="path/to/your-project" showCursor={true} command="" />
+
+
+### Install
+
+We install the [lnhistoryclient](https://pypi.org/project/lnhistoryclient/) via pip into our virtual environment.
+<TerminalOneLiner user="(.venv) you" host="local" path="path/to/your-project" command="pip install lnhistoryclient" />
+
+
+## Use it
+
+Create a python file `analysis.py` in your project and copy the following code into it:
+
+```python
+import os
+from datetime import datetime
+
+from lnhistoryclient.Lnhistoryrequster import LnhistoryRequester, LnhistoryRequesterError
+
+# Example usage of the client
+api_key = "YOUR_API_KEY"
+
+with LnhistoryRequester(api_key) as client:
+    try:
+        # Get a snapshot at a specific time and create NetworkX graph
+        timestamp = datetime(2021, 2, 6, 1, 0, 0)
+        
+        # Option 1: Get NetworkX graph directly
+        graph = client.get_snapshot_at_timestamp(timestamp, return_graph=True, stopwatch=True)
+        print(f"Graph created with {graph.number_of_nodes()} nodes and {graph.number_of_edges()} edges")
+
+        print("="*50)
+        
+        # Option 2: Get graph and save to file
+        graph = client.get_snapshot_at_timestamp(
+            timestamp, 
+            return_graph=True,
+            save_to_file="lightning_network.graphml",
+            format="graphml",
+            stopwatch=True
+        )
+        print("Graph saved to lightning_network.graphml")
+
+        print("="*50)
+        
+        # Option 3: Get raw file path for manual processing
+        file_path = client.get_snapshot_at_timestamp(timestamp, return_graph=False, stopwatch=True)
+        print(f"Raw data available at: {file_path}")
+        # Don't forget to clean up the temp file when done
+        os.unlink(file_path)
+        
+    except LnhistoryRequesterError as e:
+        print(f"API Error: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+```
+
+Run the code from your virtual environment.
+
+<Terminal user="(.venv) you" host="local" path="path/to/your-project" command="python analysis.py">
+```
+[Stopwatch] Download took 1.4367 seconds
+First pass: collecting all messages...
+
+Node announcement statistics:
+Total unique nodes with announcements: 3911
+Nodes with multiple announcements: 3585
+  02e2897c6f393adc5aee8e9dab308946703cbc219e51fec511147d2c5bd7cf831e: 172 announcements
+  03139bd79698f0816493f49ca9093b9924293ad5aaab26a3f5e20b5353093ea6dc: 92 announcements
+  02e624ada98431468dbab3fc78e7c38cf6f4b881fbdcf63098f887e9cba91d4b60: 67 announcements
+  021c97a90a411ff2b10dc2a8e32de2f29d2fa49d41bfbb52bd416e460db0747d0d: 64 announcements
+  0235a3e856afa83f17b077c669c5623f9a4605ebed040f67008709acefe886abc2: 40 announcements
+
+Second pass: building graph...
+
+Graph construction complete!
+Total nodes: 9042
+  - Announced nodes: 3911
+  - Unannounced nodes (in channels): 5131
+  - Isolated announced nodes (no channels): 25
+Total directed edges: 69542
+Total channels: 38300
+Total channel updates: 59446
+[Stopwatch] Graph creation took 0.7835 seconds
+Graph created with 9042 nodes and 69542 edges
+==================================================
+[Stopwatch] Download took 1.7348 seconds
+First pass: collecting all messages...
+
+Node announcement statistics:
+Total unique nodes with announcements: 3911
+Nodes with multiple announcements: 3585
+  02e2897c6f393adc5aee8e9dab308946703cbc219e51fec511147d2c5bd7cf831e: 172 announcements
+  03139bd79698f0816493f49ca9093b9924293ad5aaab26a3f5e20b5353093ea6dc: 92 announcements
+  02e624ada98431468dbab3fc78e7c38cf6f4b881fbdcf63098f887e9cba91d4b60: 67 announcements
+  021c97a90a411ff2b10dc2a8e32de2f29d2fa49d41bfbb52bd416e460db0747d0d: 64 announcements
+  0235a3e856afa83f17b077c669c5623f9a4605ebed040f67008709acefe886abc2: 40 announcements
+
+Second pass: building graph...
+
+Graph construction complete!
+Total nodes: 9042
+  - Announced nodes: 3911
+  - Unannounced nodes (in channels): 5131
+  - Isolated announced nodes (no channels): 25
+Total directed edges: 69542
+Total channels: 38300
+Total channel updates: 59446
+[Stopwatch] Graph creation took 0.7338 seconds
+Graph saved to lightning_network.graphml
+==================================================
+[Stopwatch] Download took 2.2794 seconds
+Raw data available at: /var/folders/zw/pv6h0gn572qcks8hbyp8g8580000gn/T/tmpoca_1gze.pg_copy
+```
+</Terminal>
+
+The methods of the [LnhistoryRequester.py](https://github.com/ln-history/ln-history-python-client/Lnhistoryrequester.py) class are very flexibel. You can play around with dfferent settings.

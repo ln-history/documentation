@@ -7,6 +7,7 @@ interface TerminalOnelinerProps {
   user?: string;
   host?: string;
   path?: string;
+  showCursor?: boolean;
   command: string;
   inTerminal?: boolean;
 }
@@ -15,6 +16,7 @@ const TerminalOneliner: React.FC<TerminalOnelinerProps> = ({
   user = 'ln-history',
   host = 'host',
   path = '~',
+  showCursor = false,
   command,
   inTerminal = false,
 }) => {
@@ -24,7 +26,7 @@ const TerminalOneliner: React.FC<TerminalOnelinerProps> = ({
       host={host}
       path={path}
       command={command}
-      showCursor={false}
+      showCursor={showCursor}
       inTerminal={inTerminal}
     />
   );

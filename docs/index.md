@@ -3,35 +3,29 @@ pageType: home
 
 hero:
   name: ln-history
-  text: documentation
-  tagline: Setup your own infrastructure to analyze Lightning Network gossip messages
+  text: Analyze Lightning Network Gossip Messages
+  tagline: Lightning fast snapshot generation, snapshot-diff calculation and much more analysis! 
   actions:
     - theme: brand
       text: Quick Start
-      link: /guide/
+      link: /guide/direct_request/index.html
     - theme: alt
-      text: GitHub
-      link: https://github.com/ln-history
+      text: Documentation
+      link: /guide/
   image:
     src: /rspress-icon.png
     alt: Logo
 features:
-  - title: Perisist gossip messages
-    details: Keep your collected gossip messages in a Postgres database
-    icon: 🏺
-  - title: Query gossip messages
-    details: Utilize optimized database configurations and queries
+  - title: Zero Infrastructure  
+    details: Request data from the live-api for free and work locally. Analyze (historic) snapshots, calculate their difference or look into gossip messages by node_id or scid.  
+    link: ./guide/direct_request/index.html
     icon: 📊
-  - title: Research gossip messages
-    details: Analyze the Lightning Network gossip
-    icon: 🔬
-  - title: Make gossip messages and results accessible
-    details: Use the API to give access to your results
-    icon: 🌈
-  - title: Fully open source
-    details: The ln-history project is completely open source. Feel free to contribute
-    icon: 🌍
-  - title: Summer of Bitcoin
-    details: This project is the result of Summer of Bitcoin 2025
-    icon: 🤝
+  - title: Use your own collected gossip messages
+    details: Bulk import your own gossip messages into an efficiently indexed Postgres database and analyse your own data. No trust required.
+    link: ./guide/bulk_import/index.html
+    icon: 🏺
+  - title: Real time and historic analysis
+    details: Collect gossip messages in real time. Analyze historic and the latest gossip messages - always ahead!
+    link: ./guide/real_time/index.html
+    icon: 👑
 ---
