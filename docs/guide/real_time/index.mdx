@@ -1,8 +1,10 @@
 import { Badge } from '@rspress/theme-default';
 import Terminal from '/src/components/Terminal';
 import TerminalOneLiner from '/src/components/TerminalOneLiner';
+import Title from '/src/components/Title';
 
-# Live Data Insertion <Badge text="harder" type="warning" />
+
+<Title text="Live Data Insertion" badgeText="harder" badgeType="warning" />
 
 This version collects and inserts collected gossip messages in *real time* into the _ln-history-database_.
 
@@ -13,10 +15,10 @@ Please note that this version is more difficult to setup, since it consists of m
 
 You will have to have a running [Core Lightning node](https://corelightning.org/).
 
-First we will configure the [Core Lightning node](https://corelightning.org/) to run the [gossip-publisher-zmq](https://github.com/ln-history/gossip-publisher-zmq) plugin.
-The plugin publishes the collected gossip messages via a Zero Message Queue to the [gossip-syncer](https://github.com/ln-history/gossip-syncer) micro-service.
+First we will configure the [Core Lightning node](https://corelightning.org/) to run the [gossip-publisher-zmq](./gossip_publisher_zmq) plugin.
+The plugin publishes the collected gossip messages via a Zero Message Queue to the [gossip-syncer](./gossip_syncer) micro-service.
 The gossip messages get filtered and then produced to a [Kafka](https://kafka.apache.org/) instance. 
-The [gossip-post-processor](https://github.com/ln-history/gossip-post-processor) subscribes from this service and inserts the collected data into the _ln-history-database_.
+The [gossip-post-processor](./gossip_post_processor) subscribes from this service and inserts the collected data into the _ln-history-database_.
 
 
 

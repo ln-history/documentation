@@ -1,7 +1,7 @@
 # Lightning Network Gossip
 
-The ln-history project works with messages of the Bitcoin Lightning network specifically the gossip messages. This page should give you a an overview about their strucutre and most important types.
-For detailed information see please refer to the protocol:
+The ln-history project works with messages of the Bitcoin Lightning network specifically the gossip messages. This page should give you a an overview about their strucuture and most important types.
+For detailed information see the protocol:
 
 - [BOLT #1](https://github.com/lightning/bolts/blob/master/01-messaging.md) for Lightning messages
 - [BOLT #7](https://github.com/lightning/bolts/blob/master/07-routing-gossip.md) for gossip messages

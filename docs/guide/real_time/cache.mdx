@@ -1,8 +1,9 @@
 import { Badge } from '@rspress/theme-default';
 import Terminal from '/src/components/Terminal';
 import TerminalOneLiner from '/src/components/TerminalOneLiner';
+import Title from '/src/components/Title';
 
-# Cache
+<Title text="Cache" badgeText="easy" badgeType="tip" />
 
 The _ln-history_ platform provides the feature to get live data from multiple nodes.
 This is particularly interesting when analyzing how fast and complete gossip messages get propergated through the Bitcoin Lightning Network.
@@ -67,8 +68,8 @@ Ultimatly the folder structure should look like this:
 
 ```bash
 cache/
-├── docker-compose.yml      # Docker setup for this service
-└── .env                    # Environment variables for the service
+├── .env                    # Environment variables for the service
+└── docker-compose.yml      # Docker setup for this service
 ```
  
 ## Run

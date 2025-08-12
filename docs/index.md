@@ -4,7 +4,7 @@ pageType: home
 hero:
   name: ln-history
   text: Analyze Lightning Network Gossip Messages
-  tagline: Lightning fast snapshot generation, snapshot-diff calculation and much more analysis! 
+  tagline: Lightning-fast snapshots, diff calculations, and deep network insights.
   actions:
     - theme: brand
       text: Quick Start
@@ -17,15 +17,15 @@ hero:
     alt: Logo
 features:
   - title: Zero Infrastructure  
-    details: Request data from the live-api for free and work locally. Analyze (historic) snapshots, calculate their difference or look into gossip messages by node_id or scid.  
+    details: Request data from the live-api for free. Explore snapshots, run diff comparisons, or dig into gossip messages by `node_id` or `scid` - no setup required.  
     link: ./guide/direct_request/index.html
     icon: 📊
-  - title: Use your own collected gossip messages
-    details: Bulk import your own gossip messages into an efficiently indexed Postgres database and analyse your own data. No trust required.
+  - title: Bring Your Own Data
+    details: Import your own gossip messages in bulk into a high-performance Postgres database. Analyze on your own terms—no trust, no limits.
     link: ./guide/bulk_import/index.html
     icon: 🏺
   - title: Real time and historic analysis
-    details: Collect gossip messages in real time. Analyze historic and the latest gossip messages - always ahead!
+    details: Stream gossip data live or dive into historical archives. Stay ahead with up-to-date and past network analysis at your fingertips.
     link: ./guide/real_time/index.html
     icon: 👑
 ---

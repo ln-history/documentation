@@ -1,9 +1,9 @@
 import { Badge } from '@rspress/theme-default';
 import Terminal from '/src/components/Terminal';
 import TerminalOneLiner from '/src/components/TerminalOneLiner';
+import Title from '/src/components/Title';
 
-
-# Gossip Post Processor <Badge text="easy" type="tip" />
+<Title text="Gossip Post Processor" badgeText="harder" badgeType="warning" />
 
 The [gossip-post-processor](https://github.com/ln-history/gossip-post-processor) service subscribes to a [Kafka](https://kafka.apache.org/) instance consuming [PlatformEvents](https://github.com/ln-history/ln-history-python-client/blob/main/lnhistoryclient/model/platform_internal/PlatformEvent.py) that have been published by the [gossip-syncer](https://github.com/ln-history/gossip-syncer).
 

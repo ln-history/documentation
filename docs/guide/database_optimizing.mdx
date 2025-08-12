@@ -1,14 +1,15 @@
 import { Badge } from '@rspress/theme-default';
 import Terminal from '/src/components/Terminal';
 import DockerTerminalOneLiner from '/src/components/DockerTerminalOneLiner';
+import Title from '/src/components/Title';
 
-# Database Optimizing <Badge text="harder" type="warning" />
+<Title text="Database Optimizing" badgeText="harder" badgeType="warning" />
 
 At this step all gossip messages have been inserted into the _ln-history-database_.
 
 We will tune the [Postgresql](https://www.postgresql.org/) database such the queries run more efficiently.
 
-## Optional Step <Badge text="info" type="tip" />
+## _Optional Step_
 
 Depending on your use case you might find this optimization not helpful.
 
@@ -406,4 +407,4 @@ As the last step we will put a backend _in front_ of the _ln-history-database_.
 
 ## More information
 
-Feel free to read my self written [blog article](https://ln-history.info/logbook/08-04-optimizing-database/) that explains it in detail.
+Feel free to read my written [blog article](https://ln-history.info/logbook/08-04-optimizing-database/) that explains it in detail.

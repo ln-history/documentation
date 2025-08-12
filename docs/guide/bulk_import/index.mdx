@@ -1,8 +1,9 @@
 import { Badge } from '@rspress/theme-default';
 import Terminal from '/src/components/Terminal';
 import TerminalOneLiner from '/src/components/TerminalOneLiner';
+import Title from '/src/components/Title';
 
-# Bulk import <Badge text="easy" type="tip" /> 
+<Title text="Bulk Import" badgeText="easy" badgeType="tip" />
 
 This section sets up the docker container [insert-gossip](https://github.com/ln-history/insert-gossip) which is able to read gossip messages in bytes format from a specified file.
 Such a file is e. g. the `gossip_store` file that gets created by a [Core Lightning node](https://corelightning.org/) automatically.
@@ -61,12 +62,12 @@ Ultimatly the folder structure should look like this:
 
 ```bash
 database/
-├── docker-compose.yml      # Docker setup for this service
 ├── .env                    # .env file with credentials
+├── docker-compose.yml      # Docker setup for this service
 └── gossip_store            # The file that contains the gossip messages in raw bytes
 ```
 
-Please make sure that the permissions are correctly set, such that the insert-gossip service has the correct permission to read the file at `FILE_PATH`. <Badge text="info" type="tip" />
+Please make sure that the permissions are correctly set, such that the insert-gossip service has the permissions to read the file at `FILE_PATH`. <Badge text="info" type="tip" />
 
 ## Notice <Badge text="warning" type="warning" />
 
