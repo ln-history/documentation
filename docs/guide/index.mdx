@@ -105,7 +105,7 @@ The Lightning Network - as a second layer technology - uses the Bitcoin blockcha
 
 If you've set up a Bitcoin Core node with `txindex=1` enabled, you can run the [btc-rpc-explorer](https://github.com/janoside/btc-rpc-explorer) service on your bitcoin node to browse and query blockchain data via the node's RPC interface.
 
-Current both modes **real-time** and **bulk-import** of the platform work by requesting a _btc-rpc-explorer_. If you are trying to insert thousands of `channel_announcement` messages at once (as the current implementation of the [insert-gossip](./bulk_import/index.html) does), inserting `channel_announcement` messages take time (and bandwidth).
+Currently both modes **real-time** and **bulk-import** of the platform work by requesting a _btc-rpc-explorer_. If you are trying to insert thousands of `channel_announcement` messages at once (as the current implementation of the [insert-gossip](./bulk_import/index.html) does), inserting `channel_announcement` messages take time (and bandwidth).
 
 The **bulk-import** mode would very likely work better with the _iterate bitcoin_ setup.
 I will start working on a solution to this in the near future, likely utilizing [Iterate Bitcoin](https://github.com/rustyrussell/bitcoin-iterate).

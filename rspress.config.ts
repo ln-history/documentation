@@ -31,8 +31,5 @@ export default defineConfig({
   markdown: {
     showLineNumbers: true,
   },
-  globalUIComponents: [
-    path.join(__dirname, 'src', 'components', 'Terminal.tsx'),
-  ],
   globalStyles: path.join(__dirname, 'src', 'styles', 'global.css'),
 });
