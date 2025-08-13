@@ -1,18 +1,36 @@
 import {Badge} from "@rspress/theme-default";
+import ContactForm from '/src/components/ContactForm'
 import Title from "/src/components/Title";
 import TerminalOneLiner from "/src/components/TerminalOneLiner";
 import Terminal from "/src/components/Terminal";
 
 <Title text="Direct request" badgeText="very easy" badgeType="info" />
 
-## Introduction
+## 👋 Introduction
 
-You want to start right away generating snapshots, getting snapshot differences or just analyze particular channels or nodes and do not have any gossip data?
+You want to start right away:
+ - generate snapshots 
+ - calulate snapshot differences 
+ - or just analyze particular channels or nodes 
+BUT dont have any gossip data?
 
-No problem, I provide the necessary infrastructure for that. To limit access you need to have an `ApiKey`. Please fill out the form below and I will give you an `ApiKey` for free.
+No problem! 😁
 
-This is a temporary solution and has the advantage that the server does not get shot down easily and you do _not_ have to register with your data.
+I provide the necessary [infrastructure](https://apiv2.ln-history.info/swagger/index.html) for that. To limit access you need to have an `ApiKey`. 
+Please fill out the [form](./#request-an-apikey) below and I will give you an `ApiKey` for free.
+I am interested in your research, feel free to give some context of your research.
 
+Using an `ApiKey` based authentication is a temporary solution and has the advantage that the server does not get shot down easily. 
+Additionally you do _not_ have to register with your data.
+
+## Request an ApiKey
+Please enter a valid Email address that you can access. I will respond on that address with the `ApiKey` as quick as possible.
+
+<div style={{ display: 'flex', justifyContent: 'center' }}>
+  <div style={{ flex: 1, maxWidth: '1000px', padding: '1rem' }}>
+    <ContactForm />
+  </div>
+</div>
 
 ## Setup
 
@@ -154,4 +172,4 @@ Raw data available at: /var/folders/zw/pv6h0gn572qcks8hbyp8g8580000gn/T/tmpoca_1
 ```
 </Terminal>
 
-The methods of the [LnhistoryRequester.py](https://github.com/ln-history/ln-history-python-client/Lnhistoryrequester.py) class are very flexibel. You can play around with dfferent settings.
+The methods of the [LnhistoryRequester.py](https://github.com/ln-history/ln-history-python-client/blob/main/lnhistoryclient/Lnhistoryrequster.py) class are very flexibel. You can play around with dfferent settings.

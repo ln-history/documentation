@@ -68,7 +68,7 @@ graph TD
 The core of the plaform is a [postgres](https://www.postgresql.org/) database called _ln-history-database_ which gets setup first.
 After that you can decide if you want to setup the **bulk-import** or the **real-time** (_or even both_) modes.
 
-_The simpler mode is the **bulk-import**, which I recommend for starters_.
+_I recommend the easiest mode for starters to familiarize yourself, see  **[direct_request](./direct_request/index.mdx)**,  .
 
 The **bulk-import** mode needs the [insert-gossip](./bulk_import/index.html) [docker container](https://www.docker.com/) running which is able to read raw gossip messages, parse them and ultimatly insert them into the _ln-history-database_.
 
