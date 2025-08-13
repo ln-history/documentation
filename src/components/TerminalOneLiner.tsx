@@ -1,4 +1,3 @@
-import type React from 'react';
 import '../styles/global.css';
 
 import CommandLine from './CommandLine';

@@ -1,6 +1,3 @@
-import type React from 'react';
-import '/src/styles/global.css';
-
 import CopyButton from './CopyButton';
 
 interface CommandLineProps {

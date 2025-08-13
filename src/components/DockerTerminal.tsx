@@ -1,5 +1,4 @@
 import type React from 'react';
-import '../styles/global.css';
 
 interface DockerTerminalProps {
   pathInfo: string;

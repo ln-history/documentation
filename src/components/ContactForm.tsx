@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 interface ContactFormProps {
   endpoint?: string; // Optional, defaults to "/api/contact"
