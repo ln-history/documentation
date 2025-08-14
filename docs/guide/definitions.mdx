@@ -1,17 +1,65 @@
 # Definitions
 
-This page definies the terms `snapshot` as well as `difference between two snapshots` and more. Additionally it clarifies edge case handling.
+This page defines terms like `snapshot`, `difference between two snapshots` and more. Additionally it clarifies edge case handling.
 
 ## Snapshot
 
+A `snapshot` of the Bitcoin Lightning Network is a collection of gossip messages (Lightning Messages of type `256`, `257`, `258`) that where `valid` at the given `timestamp`.
+
+The term `valid` means that the information of the _valid_ gossip message can be found in the topology of the Lightning Network.
+
+
 ## Difference between two snapshots
 
-## Closed channel
+A `difference between two snapshots` is the set of gossip messages that have been published between the given `start_timestamp` and `end_timestamp`.
+
+
+## Node information
+
+Gets all `node_announcement` messages for a given `node_id`.
+
+
+## Channel information
+
+Gets all `channel_announcement` and `channel_update` messages for a given `scid`.
+
+
 
 ## Edge cases
 
+_The gossip protocol of the Bitcoin Lightning Network is lossy. We might not gather every gossip message. Here is a list of certain edge cases and how the ln-history plaform reacts. In general we try to collect as much as possible_ 
+
+
 ### Collected node_announcement for a node without channels
 
-### Collected channel_announcement with node_ids that were not previously announced
+Add new row to `nodes_raw_gossip` table with the timestamp of the `node_announcement` message.
+Create a new rows in `nodes` table with the given `node_id` and set the `from_timestamp` and `last_seen` to the `timestamp` of the node_announcement message.
+
+
+### Collected channel_announcement with one (or two) node_ids that were not previously announced
+
+Create one (or two) new rows to the `nodes` table with the given `node_id` set the `from_timestamp` and `last_seen` to the `timestamp` of the `channel_announcement` message.
+DO NOT create a row in the `nodes_raw_gossip` table.
+Create a new row in the channels table and set `timestamp_from` to the `timestamp` of the `channel_announcement` message.
+
 
 ### Collected channel_update message for a channel without previously collected channel_announcement
+
+Split the `scid` into `block_height`, `tx_idx`. `out_idx`.
+Check the Bitcoin Blockchain if the transaction is a valid `channel_announcement`-transaction.
+- If it is: 
+Add new row to `channels` table where the `timestamp` of the block at the given `block_height` is the `from_timestamp`.
+Add `channel_update` to `channel_updates` table.
+ 
+- If it is NOT: 
+_Ignore_ the channel_update
+
+
+
+
+## Disclaimer
+
+Throught this project I have used the term `the (Bitcoin) Lightning Network`. To be very exact this is confusing. There is not *`the`* Lightning Network, technically multiple Lightning Networks could exists in parallel.
+Some Bitcoin nodes could connect themselves using the Lightning protocol and have _their own_ Lightning Network.
+
+In reality there is - to say the least - a "dominant" Lightning Network with thousands of nodes and channels. When reading `the (Bitcoin) Lightning Network`, think about this Lightning Network.
