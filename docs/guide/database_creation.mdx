@@ -38,6 +38,7 @@ erDiagram
     }
 
     channels {
+        varchar(64) gossip_id 
         varchar(23) scid PK
         varchar(66) source_node_id FK
         varchar(66) target_node_id FK
@@ -163,6 +164,7 @@ Inside the docker container execute the following commands.
 
     <DockerTerminalOneLiner pathInfo="admin=#" command={String.raw`-- Create channels table
     CREATE TABLE channels (
+    gossip_id VARCHAR(64) UNIQUE,
     scid VARCHAR(23) PRIMARY KEY,
     source_node_id VARCHAR(66) REFERENCES nodes(node_id),
     target_node_id VARCHAR(66) REFERENCES nodes(node_id),

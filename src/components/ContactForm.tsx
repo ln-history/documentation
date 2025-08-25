@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 interface ContactFormProps {
   endpoint?: string; // Optional, defaults to "/api/contact"
@@ -10,6 +10,8 @@ const ContactForm: React.FC<ContactFormProps> = ({ endpoint = "/api/contact" }) 
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [error, setError] = useState("");
+  const [firstAttempt, setFirstAttempt] = useState(true);
+  const resetTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const validateEmail = (email: string) => {
     // Simple but effective email regex
@@ -41,14 +43,29 @@ const ContactForm: React.FC<ContactFormProps> = ({ endpoint = "/api/contact" }) 
       if (!response.ok) {
         throw new Error(`Server responded with ${response.status}`);
       }
+
+      // Success path: clear form and reset firstAttempt
       setStatus("success");
       setName("");
       setEmail("");
       setMessage("");
+      setFirstAttempt(true);
+      if (resetTimeoutRef.current) clearTimeout(resetTimeoutRef.current);
     } catch (err) {
       console.error(err);
-      setStatus("error");
-      setError("Failed to send message. Please try again later.");
+
+      if (firstAttempt) {
+        setFirstAttempt(false);
+        setStatus("error");
+        setError("This is a bot protection measure. Just click again and your message will be sent.");
+
+        // Reset firstAttempt automatically after 5 minutes
+        if (resetTimeoutRef.current) clearTimeout(resetTimeoutRef.current);
+        resetTimeoutRef.current = setTimeout(() => setFirstAttempt(true), 5 * 60 * 1000);
+      } else {
+        setStatus("error");
+        setError("Something went wrong. Please try again later.");
+      }
     }
   };
 

@@ -6,7 +6,7 @@ This page defines terms like `snapshot`, `difference between two snapshots` and 
 
 A `snapshot` of the Bitcoin Lightning Network is a collection of gossip messages (Lightning Messages of type `256`, `257`, `258`) that where `valid` at the given `timestamp`.
 
-The term `valid` means that the information of the _valid_ gossip message can be found in the topology of the Lightning Network.
+The term `valid` means that the information of the gossip message can be found in the topology of the Lightning Network at the given timestamp.
 
 
 ## Difference between two snapshots
@@ -16,13 +16,12 @@ A `difference between two snapshots` is the set of gossip messages that have bee
 
 ## Node information
 
-Gets all `node_announcement` messages for a given `node_id`.
+Gets all `node_announcement`, `channel_announcement` and `channel_update` messages that contain the `node_id`.
 
 
 ## Channel information
 
 Gets all `channel_announcement` and `channel_update` messages for a given `scid`.
-
 
 
 ## Edge cases
@@ -59,7 +58,7 @@ _Ignore_ the channel_update
 
 ## Disclaimer
 
-Throught this project I have used the term `the (Bitcoin) Lightning Network`. To be very exact this is confusing. There is not *`the`* Lightning Network, technically multiple Lightning Networks could exists in parallel.
+Through out this project I have used the term `the (Bitcoin) Lightning Network`. To be very exact this is confusing. There is not *`the`* Lightning Network, technically multiple Lightning Networks could exists in parallel.
 Some Bitcoin nodes could connect themselves using the Lightning protocol and have _their own_ Lightning Network.
 
 In reality there is - to say the least - a "dominant" Lightning Network with thousands of nodes and channels. When reading `the (Bitcoin) Lightning Network`, think about this Lightning Network.
