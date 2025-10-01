@@ -1,5 +1,135 @@
 import Title from '/src/components/Title';
+import Terminal from '/src/components/Terminal'
+import TerminalOneLiner from '/src/components/TerminalOneLiner'
+import { Badge } from '@rspress/theme-default';
 
-<Title text="Gossip Publisher ZMQ" badgeText="harder" badgeType="warning" />
+<Title text="Gossip Publisher ZeroMQ" badgeText="harder" badgeType="warning" />
 
 
+To run the `ln-history platform` in real-time you need to have one (or multiple) Core Lightning nodes - with the [gossip-publisher-zmq Core Lightning Plugin](https://github.com/ln-history/gossip-publisher-zmq) setup - running.
+
+
+## Features of the plugin
+
+The gossip-publisher-zmq plugin monitors the [`gossip_store`](https://docs.corelightning.org/docs/contribute-to-core-lightning#gossip_store-direct-access-to-lightning-gossip) file every Core Lightning node manages by itself to store the collected gossip messages.
+The plugin is able to find a valid *offset* in the `gossip_store` by itself and starts to publish collected gossip messages via a [ZeroMQ PUB socket](https://zeromq.org/socket-api/).
+Any service can connect to this pub socket which will be in this case the gossip-syncer.
+
+Every gossip message will get parsed by utilizing the [lnhistoryclient](https://pypi.org/project/lnhistoryclient/) package.
+
+## API of the plugin
+Every message of the gossip-publisher-zmq pub socket will have the format of the [PluginEventMetadata](https://github.com/ln-history/ln-history-python-client/blob/main/lnhistoryclient/model/types.py#L57):
+```python
+# PluginEvent refers to all events published by the gossip-publisher-zmq Core Lightning plugin
+class PluginEventMetadata(TypedDict):
+    type: int
+    name: str
+    timestamp: int
+    sender_node_id: str
+    length: int  # Length in bytes without starting 2-byte typ
+
+
+# Base structure for all events
+class BasePluginEvent(TypedDict):
+    metadata: PluginEventMetadata
+    raw_hex: str
+```
+
+## Setup the plugin
+
+### Clone 
+
+Clone the plugin repository into your `/plugins` directory of your node using the following command:
+<TerminalOneLiner host='lightning-node' path='lightning/plugins' command='git clone https://github.com/ln-history/gossip-publisher-zmq' />
+
+### Setup virtual environment
+Go inside the directory and install the necessary dependencies in your virtual environment
+
+First create the virtual environment using the following command
+<TerminalOneLiner host="lightning-node" path='lightning/plugins/gossip-publisher-zmq' command='python -m venv .venv' />
+
+This creates a new folder called `.venv` which will contain the dependencies for the gossip-publisher-zmq plugin
+
+Next we activate this environment by executing the following command
+<TerminalOneLiner host="lightning-node" path='lightning/plugins/gossip-publisher-zmq' command='source .venv/bin/activate' />
+
+Lastly we install the dependencies as defined in the `requirements.txt` using pip from our virtual environment.
+<TerminalOneLiner host="lightning-node" path='lightning/plugins/gossip-publisher-zmq' command='pip install -r requirements.txt' />
+
+## Update the shebang
+To use the virtual environment we need to edit the first line of the `main.py` file to match the newly created virtual environment.
+Substitute the `<your-user>` with your user and update the first line with the following shebang.
+
+```python
+#!/home/<your-user>/lightning/plugins/gossip-publisher-zmq/.venv/bin/python
+```
+
+### Update configuration
+Add this line to your `lightning.conf`
+```text
+plugin=lightning/plugins/gossip-publisher-zmq/main.py
+```
+
+### Environment variables <Badge text="authentication" type="danger"/>
+
+The plugin can be configured with the following parameters
+
+| ENV_NAME             | Default Value | Type   | Comment                                                                 |
+|-----------------------|---------------|--------|-------------------------------------------------------------------------|
+| DEFAULT_ZMQ_HOST      | 127.0.0.1     | str    | Your local machine                                                      |
+| DEFAULT_ZMQ_PORT      | 5675          | int    | Port used for ZMQ connection                                            |
+| DEFAULT_SENDER_NODE_ID| -             | str    | Any string possible; if empty, the plugin identifies the node_id itself |
+| POLL_INTERVAL         | 1.0           | float  | Time in seconds the plugin waits before retrying (e.g. checking new gossip) |
+| START_AT_BYTE         | 1             | int    | Offset (in bytes) in the gossip_store file                              |
+
+
+The cloned repository contains a `.env.example` which can be copied and renamed to `.env`
+In this file update the environment variable however you like.
+
+🔐 **Important**: Never commit `.env` files containing credentials to version control.
+
+#### Notes about the `START_AT_BYTE` value
+The plugin goes from the start to the end through the `gossip_store` file. If you only want to publish newly collected messages and not every collected message, please set this value to something close to the end.
+You could take a look at the file size of the `gossip_store` file in bytes, subtract 5000 from that and set the START_AT_BYTE to that value.
+The plugin will continue from that point until it finds a valid gossip message and starts to publish all following gossip messages.  
+
+### Restart 
+
+Just restart the Core Lightning node and your plugin should be running
+
+
+### Status methods
+
+The plugin provides two methods that can be called at any time to verify if the plugin is running correctly. 
+
+#### Overall Status
+You can check at any time the current status of the plugin by executing the following command.
+<Terminal host="lightning-node" path='lightning/plugins/gossip-publisher-zmq' command='lightning-cli gpz-status'>
+```json
+ {
+   "running": true,
+   "zmq_endpoint": "tcp://127.0.0.1:5676",
+   "sender_node_id": "<your-node-id>",
+   "gossip_store_path": "/home/<your-user>/lightning/data/bitcoin/gossip_store",
+   "offset_of_gossip_store": 53998754,
+   "initialized": true,
+   "last_10_processed_messages": [{"<message-1-data>"}, {"<message-2-data>"}, ]
+}
+```
+</Terminal>
+
+
+#### Last published messages
+Additionally you can have a look at the last 100 processed messages using this command
+<Terminal host="lightning-node" path='lightning/plugins/gossip-publisher-zmq' command='lightning-cli gpz-last-msgs'>
+```json
+[
+    {
+        "<message-1-data>"
+    },
+    {
+        "<message-2-data>"
+    }
+]
+```
+</Terminal>

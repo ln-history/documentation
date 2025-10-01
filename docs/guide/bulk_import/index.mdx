@@ -288,7 +288,7 @@ As the last step of the insertion, the service imports the created parquet (?) f
 
 ### Finish
 
-The `insert-gossip` service is concepted to run once over a given file and does not perisist information about which files have already been read.
+The `insert-gossip` service is concepted to run once over a given file and does not persist information about which files have already been read.
 To help the user keep track of the files it appends a `.done` to the file that was imported into _ln-history-database_.
 
 It has finished when you see this in your logs:

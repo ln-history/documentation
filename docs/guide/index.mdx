@@ -4,7 +4,7 @@ import TerminalOneLiner from '/src/components/TerminalOneLiner.tsx';
 
 # 👋 Introduction
 
-Welcome to the documentation of the ln-history project. In this guide we will build the infrastructure to perisist gossip messages of the Bitcoin Lightning network.
+Welcome to the documentation of the ln-history project. In this guide we will build the infrastructure to persist gossip messages of the Bitcoin Lightning network.
 I tried to make this setup process as simple as possible. If you struggle at some point or find an error, feel free to create an Github Issue [here](https://github.com/ln-history/.github/issues).
 
 ## Project structure
@@ -103,7 +103,7 @@ With [ln-history](ln-history.info) I provide the infrastructure to analyze the g
 
 The Lightning Network - as a second layer technology - uses the Bitcoin blockchain. It is therefore necessary to have access to the Bitcoin blockchain.
 
-If you've set up a Bitcoin Core node with `txindex=1` enabled, you can run the [btc-rpc-explorer](https://github.com/janoside/btc-rpc-explorer) service on your bitcoin node to browse and query blockchain data via the node's RPC interface.
+If you've set up a Bitcoin Core node with `txindex=1` enabled, you can run this [btc-rpc-explorer](https://github.com/janoside/btc-rpc-explorer) service on your bitcoin node to browse and query blockchain data via the node's RPC interface.
 
 Currently both modes **real-time** and **bulk-import** of the platform work by requesting a _btc-rpc-explorer_. If you are trying to insert thousands of `channel_announcement` messages at once (as the current implementation of the [insert-gossip](./bulk_import/index.html) does), inserting `channel_announcement` messages take time (and bandwidth).
 
