@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.2.1](https://github.com/ln-history/documentation/compare/v1.2.0...v1.2.1) (2026-01-12)
+
+
+### Bug Fixes
+
+* **backend-url:** update backend url to latest url ([7682f7a](https://github.com/ln-history/documentation/commit/7682f7a98f53c6da54f5c34fee5b9b04d485b2d9))
+
 ## 1.2.0 (2026-01-12)
 
 
