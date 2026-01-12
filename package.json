@@ -8,7 +8,9 @@
     "dev": "rspress dev",
     "format": "prettier --write .",
     "lint": "eslint .",
-    "preview": "rspress preview"
+    "preview": "rspress preview",
+    "commit": "cz",
+    "bump": "cz bump"
   },
   "dependencies": {
     "rspress": "^1.40.2",
@@ -20,9 +22,20 @@
     "@eslint/js": "^9.19.0",
     "@rspress/plugin-shiki": "^1.45.1",
     "@types/node": "^18.11.17",
+    "commitizen": "^4.3.1",
+    "cz-conventional-changelog": "^3.3.0",
     "eslint": "^9.19.0",
     "globals": "^15.14.0",
     "prettier": "^3.4.2",
     "typescript-eslint": "^8.22.0"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog",
+      "tag_format": "${version}",
+      "version_scheme": "semver",
+      "version_provider": "npm",
+      "update_changelog_on_bump": true
+    }
   }
 }
