@@ -3,7 +3,7 @@ import Terminal from '/src/components/Terminal';
 import TerminalOneLiner from '/src/components/TerminalOneLiner';
 import Title from '/src/components/Title';
 
-<Title text="Bulk Import" badgeText="easy" badgeType="tip" />
+<Title text="Bring Your Own Data" badgeText="easy" badgeType="tip" /> <Badge text="Out Of Date: This content needs to be reworked" type="danger"/>
 
 This section sets up the docker container [insert-gossip](https://github.com/ln-history/insert-gossip) which is able to read gossip messages in bytes format from a specified file.
 Such a file is e. g. the `gossip_store` file that gets created by a [Core Lightning node](https://corelightning.org/) automatically.
@@ -25,21 +25,20 @@ From the project root we create the `insert-gossip` directory with the following
 
 ### Environment variables <Badge text="authentication" type="danger"/>
 
-Create an `.env` file and fill in your credentials. 
-The easiest way would be to just copy your `gossip_store` file from your [Core Lightning node](https://corelightning.org/) in this directory.
+Update the `.env` file and add credentials of your RPC User to access your Bitcoin Core node.
+The easiest way would be to just copy your `gossip_store` file from your [Core Lightning node](https://corelightning.org/) into the `ln-history` directory.
 
 ```bash
 FILE_PATH=gossip_store                                                  # File path to gossip_messages
-BLOCKCHAIN_RPC_URL=YOUR_BLOCKCHAIN_RPC_URL                              # See the introduction for details
-EXPLORER_RPC_PASSWORD=YOUR_BLOCKCHAIN_RPC_PASSWORD                      # Password protection of the web interface with BASIC AUTH
-LN_HISTORY_DATABASE_CONNECTION_STRING=YOUR_DATABASE_CONNECTION_STRING   # The connection string to your ln-history-database
+BITCOIN_RPCUSER=YOUR-BITCOIN-RPC-USER
+BITCOIN_RPCPASSWORD=YOUR-BITCOIN-RPCPASSWORD
 ```
 
 🔐 **Important**: Never commit `.env` files containing credentials to version control.
 
 ### 🐳 Docker container
 
-Create the `docker-compose.yml` and paste the following content into it.
+Add this service to your `docker-compose.yml`.
 
 ```yml
 services:
@@ -49,9 +48,9 @@ services:
     restart: never ?
     environment:
       FILE_PATH: $FILE_PATH
-      BLOCKCHAIN_RPC_URL: $BLOCKCHAIN_RPC_URL
-      EXPLORER_RPC_PASSWORD: $EXPLORER_RPC_PASSWORD
-      LN_HISTORY_DATABASE_CONNECTION_STRING: $LN_HISTORY_DATABASE_CONNECTION_STRING
+      BITCOIN_RPCUSER: $BITCOIN_RPCUSER
+      BITCOIN_RPCPASSWORD: $BITCOIN_RPCPASSWORD
+      LN_HISTORY_DATABASE_CONNECTION_STRING: $POSTGRES_URI
     env_file: .env
     volumes: file_path?
 ```
@@ -61,9 +60,9 @@ services:
 Ultimatly the folder structure should look like this:
 
 ```bash
-database/
+ln-history/
 ├── .env                    # .env file with credentials
-├── docker-compose.yml      # Docker setup for this service
+├── docker-compose.yml      # Docker Compose with insert-gossip and core services
 └── gossip_store            # The file that contains the gossip messages in raw bytes
 ```
 
@@ -71,12 +70,11 @@ Please make sure that the permissions are correctly set, such that the insert-go
 
 ## Notice <Badge text="warning" type="warning" />
 
-Please note that the current implementation `channel_announcement` makes a http request to your Bitcoin RPC explorer.
-The time it takes to finish the insertion depends heavily on your bandwidth as well as the performance of your Bitcoin RPC explorer.
+Please note that for every `channel_announcement` a lookup into the Bitcoin blockchain is necessary. This might take a while depending on your hardware.
 
 ## Run
 
-We start the container by using `docker compose up -d` (The flag `-d` abbreviates `deamon`, meaning background process).
+We start the service.
 
 <TerminalOneLiner path="~/ln-history/database" command="docker compose up -d" />
 
@@ -142,7 +140,7 @@ The DuckDB has the same schema as the _ln-history-database_.
 
 After that it will go through the phases `2a` -> `2b` -> `2c`.
 
-<Terminal command="docker compose logs -f --tail=100" path="~/ln-history/insert-gossip">
+<Terminal command="docker compose logs -f --tail=100" path="~/ln-history">
     ```
     Starting phase 2
 
@@ -156,7 +154,7 @@ After that it will go through the phases `2a` -> `2b` -> `2c`.
 
 The service interates through the `nodes_announcements.bin`. For every `node_announcement` it checks if the `node_id` has been seen before. If not it inserts the `node_id` into the nodes table of the DuckDB. In any case it adds the gossip message into the `nodes_raw_gossip` table.
 
-<Terminal command="docker compose logs -f --tail=100" path="~/ln-history/insert-gossip">
+<Terminal command="docker compose logs -f --tail=100" path="~/ln-history">
     ```
     Starting phase 2a
 
@@ -178,11 +176,11 @@ The service interates through the `nodes_announcements.bin`. For every `node_ann
 
 #### Phase 2b: channel_announcements
 
-The service interates through the `channel_announcements.bin`. For every `channel_announcement` it needs to request the `BLOCKCHAIN_RPC` service to get the `amount_sat` and `timestamp` (timestamp of the Bitcoin block when it was mined) of that channel.
+The service interates through the `channel_announcements.bin`. For every `channel_announcement` it needs to request the `Bitcoin Core` to get the `amount_sat` and `timestamp` (timestamp of the Bitcoin block when it was mined) of that channel.
 It also checks if the `node_id`s of the participating nodes namely `node_id_1` and `node_id_2` exist in the `nodes` table. In case they don't, the missing `node_id` gets inserted with the `from_timestamp` (and `last_seen`) being initially the `timestamp` of the block.
 For every `channel_announcement` a new row gets created in the `channels` table.
 
-<Terminal command="docker compose logs -f --tail=100" path="~/ln-history/insert-gossip">
+<Terminal command="docker compose logs -f --tail=100" path="~/ln-history">
     ```
     Starting phase 2b
 
@@ -208,7 +206,7 @@ For every `channel_announcement` a new row gets created in the `channels` table.
 The service iterates through the `channel_updates.bin`. For every `channel_update` it checks if the channel has been announced before. If not it creates a new entry in the `channels` table.
 Every `channel_update` gets inserted into the `channel_updates` table.
 
-<Terminal command="docker compose logs -f --tail=100" path="~/ln-history/insert-gossip">
+<Terminal command="docker compose logs -f --tail=100" path="~/ln-history">
     ```
     Starting phase 2c
 
@@ -236,7 +234,7 @@ Every `channel_update` gets inserted into the `channel_updates` table.
 After the duckdb tables in the `temp-db.duckdb` have been filled completly, the `insert-gossip` services exports each table as a parquet file (?).
 As the last step of the insertion, the service imports the created parquet (?) files into the postgresql database.
 
-<Terminal command="docker compose logs -f --tail=100" path="~/ln-history/insert-gossip">
+<Terminal command="docker compose logs -f --tail=100" path="~/ln-history">
     ```
     Starting phase 3
 

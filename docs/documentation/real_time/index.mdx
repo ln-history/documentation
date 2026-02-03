@@ -1,0 +1,311 @@
+import { Badge } from '@rspress/theme-default';
+import Terminal from '/src/components/Terminal';
+import TerminalOneLiner from '/src/components/TerminalOneLiner.tsx';
+
+# Real-Time
+_Note: This documentation has not been fully updated and tested. _
+
+
+## Environment variables <Badge text="authentication" type="danger"/>
+Create an `.env` file and fill in **your own _randomly created_ credentials**.
+```bash
+UID=YOUR-USERS-UID
+GID=YOUR-USERS-GID
+DOCKER_GID=YOUR-DOCKER-GID
+BITCOIN_RPCUSER=YOUR-BITCOIN-RPCUSER
+BITCOIN_RPCPASSWORD=YOUR-BITCOIN-RPCUSERS-PASSWORD
+FULCRUM_HOST=127.0.0.1
+FULCRUM_PORT=50001
+POSTGRES_USER=YOUR-POSTGRES-USERNAME
+POSTGRES_PASSWORD=YOUR-POSTGRES-PASSWORD
+POSTGRES_URI="postgresql://YOUR-POSTGRES-USERNAME:YOUR-POSTGRES-PASSWORD@ln-history-database:5432/lnhistory"
+ConnectionStrings__PostgreSQL="Host=ln-history-database;Database=lnhistory;Username=YOUR-POSTGRES-USERNAME;Password=YOUR-POSTGRES-PASSWORD"
+GF_SECURITY_ADMIN_USER=YOUR-GRAFANA-ADMIN
+GF_SECURITY_ADMIN_PASSWORD=YOUR-GRAFANA-PASSWORD
+ApiKey=YOUR-BACKEND-API-KEY
+```
+🔐 **Important**: Never commit `.env` files containing credentials to version control.
+
+_Note: To Be Updated_
+
+## Database setup
+Download the `init.sql` file from the XXX.
+It includes the database schema, table definitions and everything necessary for the database to run.
+
+## Networking setup
+TBD
+
+## Watchdog script
+
+## Docker 
+Update the `docker-compose.yml` to add all services that are relevant.
+
+```yml
+services:
+  # VPN
+  vpn-alice:
+    image: linuxserver/wireguard:1.0.20250521
+    container_name: vpn-alice
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+    volumes:
+      - ./wireguard/alice/wg0.conf:/config/wg0.conf
+    ports:
+      - "9835:9835" # Local API Access
+      - "5675:5675" # ZMQ Access
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+
+  # Gossip Collection
+  cln-alice:
+    build:
+      context: .
+      dockerfile: cln.Dockerfile
+    container_name: cln-alice
+    user: "${UID}:${GID}"
+    network_mode: service:vpn-alice
+    depends_on:
+      - vpn-alice
+    volumes:
+      - ./alice-data:/data
+      - ./plugins:/plugins
+    command: >
+      --lightning-dir=/data
+      --alias=alice-ln-history
+      --addr=0.0.0.0:9735
+      --bind-addr=0.0.0.0:9835
+      --announce-addr=217.154.169.95:9735
+      --bitcoin-rpcuser=${BITCOIN_RPCUSER}
+      --bitcoin-rpcpassword=${BITCOIN_RPCPASSWORD}
+      --bitcoin-rpcconnect=host.docker.internal
+      --bitcoin-rpcport=8332
+      --bitcoin-retry-timeout=600
+      --plugin=/plugins/gossip-publisher-zmq/main.py
+      --start-at-byte=-1
+      --zmq-port=5675
+      --zmq-host=0.0.0.0
+    healthcheck:
+      test: ["CMD-SHELL", "lightning-cli gpz-is-running | grep 'true' || exit 1"]
+
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 1m
+
+  # Gossip-Management
+  gossip-processor:
+    image: ghcr.io/ln-history/gossip-processor:0.8.1
+    container_name: gossip-processor
+    restart: always
+    environment:
+      ZMQ_SOURCES: tcp://host.docker.internal:5675,tcp://host.docker.internal:5676
+      POSTGRES_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ln-history-database:5432/lnhistory
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - ln-history-database
+
+  chain-enricher:
+    image: ghcr.io/ln-history/chain-enricher:0.2.0
+    container_name: chain-enricher
+    restart: always
+    environment:
+      POSTGRES_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ln-history-database:5432/lnhistory
+      FULCRUM_HOST: host.docker.internal
+      FULCRUM_PORT: 50001
+      BITCOIN_RPCHOST: host.docker.internal
+      BITCOIN_RPCPORT: 8332
+      BITCOIN_RPCUSER: ${BITCOIN_RPCUSER}
+      BITCOIN_RPCPASSWORD: ${BITCOIN_RPCPASSWORD}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - ln-history-database
+
+  peer-manager:
+    image: ghcr.io/ln-history/peer-manager:0.2.0
+    container_name: peer-manager
+    restart: always
+    user: "${UID}:${GID}"
+    environment:
+      POSTGRES_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ln-history-database:5432/lnhistory
+    volumes:
+      - ./alice-data/bitcoin:/rpc/alice
+      - ./bob-data/bitcoin:/rpc/bob
+      - ./peer-manager/target_peers.json:/config/target_peers.json
+    depends_on:
+      - ln-history-database
+
+
+  # Observability
+  grafana:
+    image: grafana/grafana:12.4.0-19913286788-ubuntu
+    container_name: grafana
+    restart: always
+    user: "${UID}:${GID}"
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+
+    volumes:
+      - ./grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+
+  prometheus:
+    image: prom/prometheus:v3.8.0
+    container_name: prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    user: "${UID}:${GID}"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus-data:/prometheus
+    # You must explicitly tell Prometheus where to store data if you change user
+    # because the default CMD might try to use a root-owned path.
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+   
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter
+    container_name: postgres-exporter
+    restart: always
+    environment:
+      # Connect as superuser (admin) to see all stats
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ln-history-database:5432/lnhistory?sslmode=disable"
+    depends_on:
+      - ln-history-database
+
+  loki:
+    image: grafana/loki:main-e106809
+    container_name: loki
+    restart: always
+    volumes:
+      - ./monitoring/loki-config.yaml:/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    restart: always
+    volumes:
+      - ./monitoring/promtail-config.yaml:/etc/promtail/config.yml
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.141.0
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./monitoring/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "8889:8889" # Expose metrics for Prometheus to scrape
+    depends_on:
+      - loki
+```
+
+If you want to scale this setup to a second (or more) nodes you need to add the following two services into the `docker-compose.yml`:
+```yml
+  vpn-bob:
+    image: linuxserver/wireguard:1.0.20250521
+    container_name: vpn-bob
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=${UID}
+      - PGID=${GID}
+    volumes:
+      - ./wireguard/bob/wg0.conf:/config/wg0.conf
+    ports:
+      - "9836:9835" # Local API Access
+      - "5676:5676" # ZMQ Access
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  cln-bob:
+    build:
+      context: .
+      dockerfile: cln.Dockerfile
+    container_name: cln-bob
+    user: "${UID}:${GID}"
+    network_mode: service:vpn-bob
+    depends_on:
+      - vpn-bob
+    volumes:
+      - ./bob-data:/data
+      - ./plugins:/plugins
+    command: >
+      --lightning-dir=/data
+      --alias=bob-research
+      --addr=0.0.0.0:9735
+      --bind-addr=0.0.0.0:9835
+      --announce-addr=87.106.70.19:9735
+      --bitcoin-rpcuser=${BITCOIN_RPCUSER}
+      --bitcoin-rpcpassword=${BITCOIN_RPCPASSWORD}
+      --bitcoin-rpcconnect=host.docker.internal
+      --bitcoin-rpcport=8332
+      --bitcoin-retry-timeout=600
+      --plugin=/plugins/gossip-publisher-zmq/main.py
+      --start-at-byte=-1
+      --zmq-port=5676
+      --zmq-host=0.0.0.0
+    healthcheck:
+      test: ["CMD-SHELL", "lightning-cli gpz-is-running | grep 'true' || exit 1"]
+
+      interval: 1m       
+      timeout: 10s       
+      retries: 3         
+      start_period: 1m
+```
+
+
+## Folder structure
+
+Ultimatly the folder structure should look like this:
+
+```bash
+database/
+├── .env                        # Environment variables
+├── alice-data                  # Core Lightning data of first node)
+├── cln.Dockerfile              # Dockerfile with python packages for gossip-publisher-zmq plugin
+├── config                      # Configuration files like `target_peers.json` for Core Lightning
+├── docker-compose.yml          # Docker compose setup
+├── grafana-data                # Grafana data
+├── init.sql                    # Database setup script
+├── monitoring                  # Monitoring configuration yaml
+├── prometheus-data             # Metrics and monitoring data
+├── wireguard                   # Contains wireguard configuration for alice (and bob)
+├── watchdog.sh                 # Script to evaluate the health of the gossip-publisher-zmq
+└── ln-history-database-data    # Gossip data of ln-history-database
+```
+
+## Run
+
+<TerminalOneLiner path="~/ln-history/database" command="docker compose up -d" />
+
+
+## Troubleshooting
+
+If you have problems setting this up (it is complex), feel free to reach out to me.

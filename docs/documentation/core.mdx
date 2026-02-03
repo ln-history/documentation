@@ -1,0 +1,83 @@
+import { Badge } from '@rspress/theme-default';
+import Terminal from '/src/components/Terminal';
+import TerminalOneLiner from '/src/components/TerminalOneLiner.tsx';
+
+# ln-history Core  <Badge text="This content needs to be tested" type="danger"/>
+
+This page sets up the database and the backend of the _ln-history_ platform.
+Both components are manditory for the [Bring Your Own Data](./bring_your_own_data/index.mdx) and [Real-Time](./real_time/index.mdx) mode.
+
+## Environment Variables
+
+Paste the following content into a `.env` file.
+
+
+```bash
+POSTGRES_USER=YOUR-POSTGRES-USERNAME
+POSTGRES_PASSWORD=YOUR-POSTGRES-PASSWORD
+POSTGRES_URI="postgresql://YOUR-POSTGRES-USERNAME:YOUR-POSTGRES-PASSWORD@ln-history-database:5432/lnhistory"
+ConnectionStrings__PostgreSQL="Host=ln-history-database;Database=lnhistory;Username=YOUR-POSTGRES-USERNAME;Password=YOUR-POSTGRES-PASSWORD"
+ApiKey=YOUR-BACKEND-API-KEY
+```
+
+## Bitcoin node
+You must have a synced and indexed Bitcoin node running that can be accessed (via password) by a user.  
+
+
+## Docker Compose
+
+```
+services:
+  ln-history-database:
+    image: postgres:18.1
+    container_name: ln-history-database
+    restart: always
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_DB: lnhistory
+    shm_size: 4gb 
+    volumes:
+      - ./ln-history-database-data:/var/lib/postgresql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    command: >
+      postgres
+      -c shared_buffers=4GB
+      -c maintenance_work_mem=1GB
+
+
+  adminer:
+    image: adminer:5.4.1
+    container_name: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - ln-history-database
+
+
+  ln-history-api:
+    image: ghcr.io/ln-history/ln-history:latest
+    container_name: ln-history-api
+    restart: always
+    ports:
+      - "5000:8080" # Expose API on host port 5000
+    environment:
+      - ConnectionStrings__PostgreSQL=${ConnectionStrings__PostgreSQL}
+      - ApiKey=${ApiKey}
+      - DOTNET_ENV=${DOTNET_ENV}
+```
+
+Paste the content into a `docker-compose.yml` file.
+
+## Run
+
+Start the containers by running:
+
+<TerminalOneLiner path="~/ln-history" command="docker compose up -d" />
+
+## Next Step
+
+Depending on your mode, please continue with [Bring Your Own Data](./bring_your_own_data/index.mdx) or [Real Time](./real_time/index.mdx).

@@ -1,11 +1,16 @@
 [
   {
-    "text": "Guide",
-    "link": "/guide/",
-    "activeMatch": "/guide/"
+    "text": "Documentation",
+    "link": "/documentation/",
+    "activeMatch": "/documentation/"
   },
   {
     "text": "API",
     "link": "https://api.ln-history.info/swagger/index.html"
+  },
+  {
+    "text": "About",
+    "link": "/about/",
+    "activeMatch": "/about/"
   }
 ]

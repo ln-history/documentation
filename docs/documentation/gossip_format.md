@@ -135,7 +135,7 @@ For this tool we are interested in those three gossip messages
 
 Each of them has unique rules for which byte represents which information.
 
-See those python functions from [lnhistoryclient/parser/parser.py](https://github.com/ln-history/ln-history-python-client/blob/main/lnhistoryclient/parser/parser.py) to get an understanding:
+See the following python functions from [lnhistoryclient/parser/parser.py](https://github.com/ln-history/ln-history-python-client/blob/main/lnhistoryclient/parser/parser.py) to get an understanding:
 
 ```python
 import io
@@ -203,17 +203,17 @@ def parse_node_announcement(data: Union[bytes, io.BytesIO]) -> NodeAnnouncement:
 
     b = io.BytesIO(data) if isinstance(data, bytes) else data
 
-    signature = read_exact(b, 64)
-    features_len = struct.unpack("!H", read_exact(b, 2))[0]
+    signature = b.read(64)
+    features_len = struct.unpack("!H", b.read(2))[0]
     features = b.read(features_len)
 
-    timestamp = struct.unpack("!I", read_exact(b, 4))[0]
-    node_id = read_exact(b, 33)
-    rgb_color = read_exact(b, 3)
-    alias = read_exact(b, 32)
+    timestamp = struct.unpack("!I", b.read(4))[0]
+    node_id = b.read(32)
+    rgb_color = b.read(3)
+    alias = b.read(32)
 
-    address_len = struct.unpack("!H", read_exact(b, 2))[0]
-    address_bytes_data = read_exact(b, address_len)
+    address_len = struct.unpack("!H", b.read(2))[0]
+    address_bytes_data = b.read(address_len)
 
     return NodeAnnouncement(
         signature=signature,

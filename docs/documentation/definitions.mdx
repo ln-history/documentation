@@ -11,7 +11,9 @@ The term `valid` means that the information of the gossip message can be found i
 
 ## Difference between two snapshots
 
-A `difference between two snapshots` is the set of gossip messages that have been published between the given `start_timestamp` and `end_timestamp`.
+We define the `difference between two snapshots` for two given (different) timestamps `t_1` and `t_2` (wlog `t_1 < t_2`) as the set of all gossip messages that have changed the topology between `t_1` and `t_2`.
+When looking at `channel_update` and `node_announcement` messages there could have happend a rebroadcasting meaning the message contained the same information as the message before, those messages are **not** included.
+Note that two gossip messages could "cancel each other out" and would therefore **not** be included in that set.
 
 
 ## Node information
@@ -21,7 +23,7 @@ Gets all `node_announcement`, `channel_announcement` and `channel_update` messag
 
 ## Channel information
 
-Gets all `channel_announcement` and `channel_update` messages for a given `scid`.
+Gets all `channel_announcement` and `channel_update` messages that contain the `scid`.
 
 
 ## Edge cases
@@ -61,4 +63,4 @@ _Ignore_ the channel_update
 Through out this project I have used the term `the (Bitcoin) Lightning Network`. To be very exact this is confusing. There is not *`the`* Lightning Network, technically multiple Lightning Networks could exists in parallel.
 Some Bitcoin nodes could connect themselves using the Lightning protocol and have _their own_ Lightning Network.
 
-In reality there is - to say the least - a "dominant" Lightning Network with thousands of nodes and channels. When reading `the (Bitcoin) Lightning Network`, think about this Lightning Network.
+In reality there is - to say the least - a _dominant_ Lightning Network with thousands of nodes and channels. When reading `the (Bitcoin) Lightning Network`, think about **this** Lightning Network.
