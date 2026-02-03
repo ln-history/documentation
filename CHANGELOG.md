@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [2.0.0](https://github.com/ln-history/documentation/compare/v1.2.1...v2.0.0) (2026-02-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* **all:** 
+
+### Features
+
+* **all:** Start updating documentation to latest version ([51ec7b4](https://github.com/ln-history/documentation/commit/51ec7b4126873e3650c9de66e88e2003fe8b6a8f))
+
 ## [1.2.1](https://github.com/ln-history/documentation/compare/v1.2.0...v1.2.1) (2026-01-12)
 
 
